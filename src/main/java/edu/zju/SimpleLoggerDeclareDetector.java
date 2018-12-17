@@ -201,8 +201,8 @@ public class SimpleLoggerDeclareDetector {
     public static void main(String[] args) {
 
         SimpleLoggerDeclareDetector detector = new SimpleLoggerDeclareDetector();
-        List<LoggerProfiler> loggers = detector.retrieveLoggers("storm", "E:/Code/tmp/storm",
-                "UTF-8", "", "", "E:/Code/tmp/storm");
+        List<LoggerProfiler> loggers = detector.retrieveLoggers("storm", "D:/Document/Github/storm",
+                "UTF-8", "", "", "D:/Document/Github/storm");
         for (LoggerProfiler logger : loggers) {
             System.out.println(logger.toString());
         }
