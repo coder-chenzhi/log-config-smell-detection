@@ -1,7 +1,15 @@
 ########################################### Java #########################################
+# added by coder.chenzhi
+/target
+.idea
+.settings/
+.classpath
+.project
+*.iml
+
 # Compiled class file
 *.class
-/target
+
 
 # Log file
 *.log
