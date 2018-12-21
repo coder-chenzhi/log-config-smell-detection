@@ -15,7 +15,7 @@ public class PropertiesToXmlUtil {
 	{
 		StringWriter writer = new StringWriter();
         Properties log4jProperties = new Properties();
-        File f=new File("D:/Document/OSS/Activemq-log4j.properties");
+        File f=new File(filepath);
         try {
 			log4jProperties.load(new FileInputStream(f));
 		} catch (FileNotFoundException e) {
@@ -30,6 +30,6 @@ public class PropertiesToXmlUtil {
 	}
 	public static void main(String[] args)
 	{
-		System.out.println(getXml("null"));
+		System.out.println(getXml("D:/Document/OSS/Activemq-log4j.properties"));
 	}
 }

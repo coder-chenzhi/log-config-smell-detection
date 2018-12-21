@@ -1,6 +1,12 @@
 package edu.zju;
 
+import java.util.List;
+
 import org.apache.commons.cli.*;
+
+import edu.zju.util.DeadConfigurationErrorDetection;
+import edu.zju.util.MagicValueErrorDetection;
+import edu.zju.util.UnlimitedOutputErrorDetection;
 
 public class Main {
 
@@ -19,7 +25,7 @@ public class Main {
         format.setRequired(true);
         options.addOption(format);
 
-        Option library = new Option(";l", "library", true, "logging libraries used by project, could be log4j / log4j2 / logback");
+        Option library = new Option("l", "library", true, "logging libraries used by project, could be log4j / log4j2 / logback");
         library.setRequired(true);
         options.addOption(library);
 
@@ -41,7 +47,24 @@ public class Main {
         String configValue = cmd.getOptionValue("config");
         String formatValue = cmd.getOptionValue("format");
         String libraryValue = cmd.getOptionValue("library");
-
+        if(!"properties".equals(formatValue)&&!"xml".equals(formatValue))
+        {
+        	System.out.println("-f parameter error");
+        	System.exit(1);
+            return;
+        }
+        
+        MagicValueErrorDetection magicValue=new MagicValueErrorDetection();
+        List<String> ans=magicValue.detect(configValue,formatValue);
+//        for(String s:ans)
+//        	System.out.println(s);
+//        DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
+//        List<String> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
+//        List<String> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
+//        
+        
+        UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
+        List<String> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
     }
 
 }
