@@ -1,20 +1,14 @@
 package edu.zju;
 
 import java.util.List;
-<<<<<<< HEAD
 import java.util.Map;
-=======
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 
 import org.apache.commons.cli.*;
-
 import edu.zju.util.DeadConfigurationErrorDetection;
 import edu.zju.util.MagicValueErrorDetection;
 import edu.zju.util.UnlimitedOutputErrorDetection;
-<<<<<<< HEAD
 import edu.zju.entity.Location;
-=======
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
+
 
 public class Main {
 
@@ -63,7 +57,7 @@ public class Main {
         }
         
         MagicValueErrorDetection magicValue=new MagicValueErrorDetection();
-<<<<<<< HEAD
+
         Map<String,List<Location>> valueMap=magicValue.detect(configValue,formatValue);
         for(String tmp:valueMap.keySet())
         {
@@ -75,24 +69,17 @@ public class Main {
         	System.out.println("");
         	//这里的还是没有进行判断的
         }
-=======
-        List<String> ans=magicValue.detect(configValue,formatValue);
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
+
 //        for(String s:ans)
 //        	System.out.println(s);
 //        DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
 //        List<String> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
 //        List<String> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
 //        
-<<<<<<< HEAD
-//        
-//        UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
-//        List<String> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
-=======
+
         
         UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
         List<String> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
     }
 
 }
