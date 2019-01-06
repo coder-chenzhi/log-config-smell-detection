@@ -4,9 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.cli.*;
-import edu.zju.util.DeadConfigurationErrorDetection;
-import edu.zju.util.MagicValueErrorDetection;
-import edu.zju.util.UnlimitedOutputErrorDetection;
+import edu.zju.detection.MagicValueErrorDetection;
+import edu.zju.detection.UnlimitedOutputErrorDetection;
 import edu.zju.entity.Location;
 
 
