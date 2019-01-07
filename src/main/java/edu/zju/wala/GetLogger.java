@@ -21,10 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -48,6 +45,16 @@ public class GetLogger {
         }
     };
 
+    private static Boolean filter(String clazz) {
+        final List<String> filterClasses = new ArrayList<String>(Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavafx", "Ljava/applet", "Ljava/awt"));
+        for (String s : filterClasses) {
+            if (clazz.startsWith(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static Map<String, Boolean> getClasspath(String project, String root) throws IOException {
         String classpathFile = "wala/{project}_classpath.txt".replace("{project}", project.toLowerCase());
         File classPath = new File(GetLogger.class.getClassLoader().getResource(classpathFile).getFile());
@@ -68,10 +75,8 @@ public class GetLogger {
     public static void retriveLogger(String projectName, String projectRoot) throws Exception {
         // 1.create an analysis scope representing the source file application
         File exFile = new File(GetLogger.class.getClassLoader().getResource("wala/no_exclusion.txt").getFile());
-        Map<String, Boolean> classpathEntries = getClasspath("cassandra", "E:/temp/apache-cassandra-3.11.3");
-//        classpathEntries.put("E:\\Code\\EclipseCommitterWork\\testproject\\target\\testproject-1.0-SNAPSHOT-shaded.jar", true);
+        Map<String, Boolean> classpathEntries = getClasspath(projectName, projectRoot);
         String classpath = classpathEntries.keySet().stream().collect(Collectors.joining(File.pathSeparator));
-//        AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope("E:\\Code\\EclipseCommitterWork\\testproject\\target\\testproject-1.0-SNAPSHOT-shaded.jar", exFile);
         AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exFile);
         // 2. build a class hierarchy, call graph, and system dependence graph
         ClassHierarchy cha = ClassHierarchyFactory.make(scope);
@@ -83,6 +88,9 @@ public class GetLogger {
         IClass clazz;
         while (classes.hasNext()) {
             clazz = classes.next();
+            if (filter(clazz.toString())) {
+                continue;
+            }
             String loggerScope = "Internal";
             // check internal or external
             try {
@@ -104,9 +112,9 @@ public class GetLogger {
                 // we assume the .class file are all internal file here
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
-            if (!clazz.getName().toString().toLowerCase().contains("cassandra")) {
-                continue;
-            }
+//            if (!clazz.getName().toString().toLowerCase().contains("cassandra")) {
+//                continue;
+//            }
             LOG.info("class:\t" + clazz);
             for(IMethod m: clazz.getDeclaredMethods()) {
                 // skip abstract method
