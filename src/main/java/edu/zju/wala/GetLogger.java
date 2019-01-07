@@ -55,18 +55,14 @@ public class GetLogger {
         return false;
     }
 
-    private static Map<String, Boolean> getClasspath(String project, String root) throws IOException {
+    private static Map<String, String> getClasspath(String project, String root) throws IOException {
         String classpathFile = "wala/{project}_classpath.txt".replace("{project}", project.toLowerCase());
         File classPath = new File(GetLogger.class.getClassLoader().getResource(classpathFile).getFile());
         String fileContent =  Files.toString(classPath, Charsets.UTF_8).replace("{project_root}", root);
-        Map<String, Boolean> classpathEntries = new HashMap<>();
+        Map<String, String> classpathEntries = new HashMap<>();
         for (String line : fileContent.split(System.lineSeparator())) {
             if (line.split(" ").length == 2) {
-                if (line.split(" ")[1].toLowerCase().equals("internal")) {
-                    classpathEntries.put(line.split(" ")[0], true);
-                } else {
-                    classpathEntries.put(line.split(" ")[0], false);
-                }
+                classpathEntries.put(line.split(" ")[0], line.split(" ")[1]);
             }
         }
         return classpathEntries;
@@ -75,7 +71,7 @@ public class GetLogger {
     public static void retriveLogger(String projectName, String projectRoot) throws Exception {
         // 1.create an analysis scope representing the source file application
         File exFile = new File(GetLogger.class.getClassLoader().getResource("wala/no_exclusion.txt").getFile());
-        Map<String, Boolean> classpathEntries = getClasspath(projectName, projectRoot);
+        Map<String, String> classpathEntries = getClasspath(projectName, projectRoot);
         String classpath = classpathEntries.keySet().stream().collect(Collectors.joining(File.pathSeparator));
         AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exFile);
         // 2. build a class hierarchy, call graph, and system dependence graph
@@ -98,11 +94,7 @@ public class GetLogger {
                 String jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
                 LOG.debug("Found {} in {}", clazz.toString(), jarFile);
                 if (classpathEntries.containsKey(jarFile)) {
-                    if (classpathEntries.get(jarFile)) {
-                        loggerScope = "Internal";
-                    } else {
-                        loggerScope = "External";
-                    }
+                    loggerScope = classpathEntries.get(jarFile);
                 } else {
                     // if there is no match, maybe jvm related jar
                     loggerScope = "External";
@@ -171,6 +163,6 @@ public class GetLogger {
     }
 
     public static void main(String[] args) throws Exception {
-        retriveLogger("cassandra", "E:\\temp\\apache-cassandra-3.11.3");
+        retriveLogger("cassandra", "/home/chenzhi/Data/projects/jar/apache-cassandra-3.11.3-bin/apache-cassandra-3.11.3");
     }
 }
