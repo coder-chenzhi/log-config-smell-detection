@@ -46,7 +46,7 @@ public class GetLogger {
     };
 
     private static Boolean filter(String clazz) {
-        final List<String> filterClasses = new ArrayList<String>(Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavafx", "Ljava/applet", "Ljava/awt"));
+        final List<String> filterClasses = new ArrayList<String>(Arrays.asList("Lsun/swing", "Ljava", "Ljavafx"));
         for (String s : filterClasses) {
             if (clazz.startsWith(s)) {
                 return true;
@@ -55,10 +55,13 @@ public class GetLogger {
         return false;
     }
 
-    private static Map<String, String> getClasspath(String project, String root) throws IOException {
+    private static Map<String, String> getClasspath(String project, Map<String, String> projectsRoot) throws IOException {
         String classpathFile = "wala/{project}_classpath.txt".replace("{project}", project.toLowerCase());
         File classPath = new File(GetLogger.class.getClassLoader().getResource(classpathFile).getFile());
-        String fileContent =  Files.toString(classPath, Charsets.UTF_8).replace("{project_root}", root);
+        String fileContent =  Files.toString(classPath, Charsets.UTF_8);
+        for (String key: projectsRoot.keySet()) {
+            fileContent.replace(key, projectsRoot.get(key));
+        }
         Map<String, String> classpathEntries = new HashMap<>();
         for (String line : fileContent.split(System.lineSeparator())) {
             if (line.split(" ").length == 2) {
@@ -68,10 +71,10 @@ public class GetLogger {
         return classpathEntries;
     }
 
-    public static void retriveLogger(String projectName, String projectRoot) throws Exception {
+    public static void retriveLogger(String projectName, Map<String, String> projectsRoot) throws Exception {
         // 1.create an analysis scope representing the source file application
         File exFile = new File(GetLogger.class.getClassLoader().getResource("wala/no_exclusion.txt").getFile());
-        Map<String, String> classpathEntries = getClasspath(projectName, projectRoot);
+        Map<String, String> classpathEntries = getClasspath(projectName, projectsRoot);
         String classpath = classpathEntries.keySet().stream().collect(Collectors.joining(File.pathSeparator));
         AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exFile);
         // 2. build a class hierarchy, call graph, and system dependence graph
@@ -82,8 +85,12 @@ public class GetLogger {
         IAnalysisCacheView cache = new AnalysisCacheImpl();
 
         IClass clazz;
+
         while (classes.hasNext()) {
             clazz = classes.next();
+
+            //cha.getImplementors(clazz.getReference());
+            //cha.computeSubClasses(clazz.getReference());
             if (filter(clazz.toString())) {
                 continue;
             }
@@ -163,6 +170,13 @@ public class GetLogger {
     }
 
     public static void main(String[] args) throws Exception {
-        retriveLogger("cassandra", "/home/chenzhi/Data/projects/jar/apache-cassandra-3.11.3-bin/apache-cassandra-3.11.3");
+        Map<String, String> projectsRoot = new HashMap<String, String>() {
+            {
+                put("cassandra_root", "/home/chenzhi/Data/projects/jar/apache-cassandra-3.11.3-bin/apache-cassandra-3.11.3");
+                put("activemq_root", "/home/chenzhi/Data/projects/jar/apache-activemq-5.15.8");
+                put("JAVA_HOME", "/usr/lib/jvm/java-8-openjdk-amd64");
+            }
+        };
+        retriveLogger("cassandra", projectsRoot);
     }
 }
