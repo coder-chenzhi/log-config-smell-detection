@@ -51,54 +51,55 @@ public class Main {
         String libraryValue = cmd.getOptionValue("library");
         if(!"properties".equals(formatValue)&&!"xml".equals(formatValue))
         {
-        	System.out.println("-f parameter error");
-        	System.exit(1);
+            System.out.println("-f parameter error");
+            System.exit(1);
             return;
         }
-        
+        System.out.println("MagicValueErrorDetection");
         MagicValueErrorDetection magicValue=new MagicValueErrorDetection();
         Map<String,List<Location>> valueMap=magicValue.detect(configValue,formatValue);
-//        for(String tmp:valueMap.keySet())
-//        {
-//        	System.out.printf("value:%-60s\t",addZeroForNum(tmp,60));
-//        	List<Location> list=valueMap.get(tmp);
-//        	System.out.printf("Times:%-3s\t",list.size());
-//        	System.out.printf("Location:{");
-//        	for(int i=0;i<list.size();i++){
-//        		Location l=list.get(i);
-//        		if(i==0)
-//        			System.out.printf("%s",l.getDescribe()+":"+"line"+l.getLine());
-//        		else
-//        			System.out.printf(",%s",l.getDescribe()+":"+"line"+l.getLine());
-//        	}
-//        	System.out.println("}");
-//        	//这里的还是没有进行判断的
-//        }
+        for(String tmp:valueMap.keySet())
+        {
+            System.out.printf("value:%-60s\t",addZeroForNum(tmp,60));
+            List<Location> list=valueMap.get(tmp);
+            System.out.printf("Times:%-3s\t",list.size());
+            System.out.printf("Location:{");
+            for(int i=0;i<list.size();i++){
+                Location l=list.get(i);
+                if(i==0)
+                    System.out.printf("%s",l.getDescribe()+":"+"line"+l.getLine());
+                else
+                    System.out.printf(",%s",l.getDescribe()+":"+"line"+l.getLine());
+            }
+            System.out.println("}");
+            //这里的还是没有进行判断的
+        }
+        System.out.println();
+        System.out.println("DeadConfigurationErrorDetection");
+        DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
+        Map<String, Integer> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
         
-        
-//        DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
-//        Map<String, Integer> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
-//        
-//        Map<String, Integer> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
-//        for(String tmp:deadAppenderList.keySet())
-//        {
-//        	System.out.printf("Unused appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
-//        	
-//        	//这里的还是没有进行判断的
-//        }
-//        System.out.println("-----------------------------");
-//        for(String tmp:deadLoggerList.keySet())
-//        {
-//        	System.out.printf("Unused logger: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
-//        }
-//        
-        
+        Map<String, Integer> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
+        for(String tmp:deadAppenderList.keySet())
+        {
+            System.out.printf("Unused appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
+            
+            //这里的还是没有进行判断的
+        }
+        System.out.println();
+        for(String tmp:deadLoggerList.keySet())
+        {
+            System.out.printf("Unused logger: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
+        }
+        System.out.println();
+        System.out.println();
+        System.out.println("UnlimitedOutputErrorDetection");
         UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
         Map<String, Integer> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
         for(String tmp:outlimitList.keySet())
-	      {
-	      	System.out.printf("Unlimited Appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),outlimitList.get(tmp));
-	      }
+          {
+            System.out.printf("Unlimited Appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),outlimitList.get(tmp));
+          }
     }
     public static String addZeroForNum(String str, int strLength) {
         int strLen = str.length();
@@ -116,4 +117,3 @@ public class Main {
     }
  
 }
-
