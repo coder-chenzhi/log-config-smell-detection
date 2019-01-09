@@ -1,20 +1,14 @@
 package edu.zju;
 
 import java.util.List;
-<<<<<<< HEAD
 import java.util.Map;
-=======
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 
 import org.apache.commons.cli.*;
 
 import edu.zju.util.DeadConfigurationErrorDetection;
 import edu.zju.util.MagicValueErrorDetection;
 import edu.zju.util.UnlimitedOutputErrorDetection;
-<<<<<<< HEAD
 import edu.zju.entity.Location;
-=======
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 
 public class Main {
 
@@ -63,36 +57,62 @@ public class Main {
         }
         
         MagicValueErrorDetection magicValue=new MagicValueErrorDetection();
-<<<<<<< HEAD
         Map<String,List<Location>> valueMap=magicValue.detect(configValue,formatValue);
-        for(String tmp:valueMap.keySet())
-        {
-        	System.out.print(tmp+":\t");
-        	List<Location> list=valueMap.get(tmp);
-        	for(Location l:list){
-        		System.out.print(l.getDescribe()+":"+l.getLine()+"行\t");
-        	}
-        	System.out.println("");
-        	//这里的还是没有进行判断的
-        }
-=======
-        List<String> ans=magicValue.detect(configValue,formatValue);
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
-//        for(String s:ans)
-//        	System.out.println(s);
+//        for(String tmp:valueMap.keySet())
+//        {
+//        	System.out.printf("value:%-60s\t",addZeroForNum(tmp,60));
+//        	List<Location> list=valueMap.get(tmp);
+//        	System.out.printf("Times:%-3s\t",list.size());
+//        	System.out.printf("Location:{");
+//        	for(int i=0;i<list.size();i++){
+//        		Location l=list.get(i);
+//        		if(i==0)
+//        			System.out.printf("%s",l.getDescribe()+":"+"line"+l.getLine());
+//        		else
+//        			System.out.printf(",%s",l.getDescribe()+":"+"line"+l.getLine());
+//        	}
+//        	System.out.println("}");
+//        	//这里的还是没有进行判断的
+//        }
+        
+        
 //        DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
-//        List<String> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
-//        List<String> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
+//        Map<String, Integer> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
 //        
-<<<<<<< HEAD
+//        Map<String, Integer> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
+//        for(String tmp:deadAppenderList.keySet())
+//        {
+//        	System.out.printf("Unused appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
+//        	
+//        	//这里的还是没有进行判断的
+//        }
+//        System.out.println("-----------------------------");
+//        for(String tmp:deadLoggerList.keySet())
+//        {
+//        	System.out.printf("Unused logger: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
+//        }
 //        
-//        UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
-//        List<String> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
-=======
         
         UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
-        List<String> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
+        Map<String, Integer> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
+        for(String tmp:outlimitList.keySet())
+	      {
+	      	System.out.printf("Unlimited Appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),outlimitList.get(tmp));
+	      }
     }
-
+    public static String addZeroForNum(String str, int strLength) {
+        int strLen = str.length();
+        if (strLen < strLength) {
+            while (strLen < strLength) {
+                StringBuffer sb = new StringBuffer();
+                sb.append(str).append(" ");// 左补0
+                // sb.append(str).append("0");//右补0
+                str = sb.toString();
+                strLen = str.length();
+            }
+        }
+     
+        return str;
+    }
+ 
 }

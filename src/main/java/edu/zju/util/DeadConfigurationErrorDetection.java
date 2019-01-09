@@ -3,8 +3,10 @@ package edu.zju.util;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.dom4j.Document;
@@ -18,16 +20,21 @@ import org.xml.sax.SAXException;
 
 import edu.zju.LoggerProfiler;
 import edu.zju.SimpleLoggerDeclareDetector;
+import edu.zju.line.LocationAwareElement;
+import edu.zju.line.LocatorAwareDocumentFactory;
+import edu.zju.line.MySAXReader;
 
 public class DeadConfigurationErrorDetection {
-	public List<String> detectDeadAppender(
+	public Map<String,Integer> detectDeadAppender(
 			 String sourceValue
 			,String configValue
 			,String formatValue
 			,String libraryValue){
 		Set<String> appenderSet=new HashSet<>();
 		Set<String> loggerSet=new HashSet<>();
-		SAXReader reader = new SAXReader();
+		Map<String,Integer> appenderMap=new HashMap<>();
+		SAXReader reader = new MySAXReader();
+		reader.setDocumentFactory(new LocatorAwareDocumentFactory());
 		reader.setEntityResolver(new EntityResolver() {
 	        @Override
 	        public InputSource resolveEntity(String publicId, String systemId)
@@ -55,6 +62,7 @@ public class DeadConfigurationErrorDetection {
 		        	if(element.getName().trim().toLowerCase().equals("appenders")){
 		        		for(Element appender:(List<Element>)element.elements()){
 		        			appenderSet.add(appender.attributeValue("name"));
+		        			appenderMap.put(appender.attributeValue("name"), ((LocationAwareElement)appender).getLineNumber());
 		        		}
 		        	}
 		        	if(element.getName().trim().toLowerCase().equals("loggers")||element.getName().trim().toLowerCase().equals("root")){
@@ -79,6 +87,7 @@ public class DeadConfigurationErrorDetection {
 				for (Element element:(List<Element>)root.elements()){
 		        	if(element.getName().trim().toLowerCase().equals("appender")){
 		        		appenderSet.add(element.attributeValue("name"));
+		        		appenderMap.put(element.attributeValue("name"), ((LocationAwareElement)element).getLineNumber());
 		        	}
 		        	if(element.getName().trim().toLowerCase().equals("logger")||element.getName().trim().toLowerCase().equals("root")){
 		        		for(Element logger:(List<Element>)element.elements()){
@@ -101,6 +110,18 @@ public class DeadConfigurationErrorDetection {
 				for (Element element:(List<Element>)root.elements()){
 		        	if(element.getName().trim().toLowerCase().equals("appender")){
 		        		appenderSet.add(element.attributeValue("name"));
+		        		appenderMap.put(element.attributeValue("name"), ((LocationAwareElement)element).getLineNumber());
+		        		List<Element> elementsListOfAppender=element.elements();
+		        		if(elementsListOfAppender!=null)
+		        		{
+		        			for(Element elementsOfAppender:elementsListOfAppender)
+		        			{
+		        				if(elementsOfAppender.getName().toLowerCase().equals("appender-ref"))
+		        				{
+		        					loggerSet.add(elementsOfAppender.attributeValue("ref"));
+		        				}
+		        			}
+		        		}
 		        	}
 		        	if(element.getName().trim().toLowerCase().equals("logger")||element.getName().trim().toLowerCase().equals("root")){
 		        		for(Element logger:(List<Element>)element.elements()){
@@ -126,6 +147,7 @@ public class DeadConfigurationErrorDetection {
 				for (Element element:(List<Element>)root.elements()){
 		        	if(element.getName().trim().toLowerCase().equals("appender")){
 		        		appenderSet.add(element.attributeValue("name"));
+		        		appenderMap.put(element.attributeValue("name"), ((LocationAwareElement)element).getLineNumber());
 		        	}
 		        	if(element.getName().trim().toLowerCase().equals("logger")||element.getName().trim().toLowerCase().equals("root")){
 		        		for(Element logger:(List<Element>)element.elements()){
@@ -142,19 +164,21 @@ public class DeadConfigurationErrorDetection {
 //		System.out.println("--------------");
 //		for(String tmp:loggerSet)
 //			System.out.println(tmp);
-		
 		appenderSet.removeAll(loggerSet);
-		
-		return new ArrayList<>(appenderSet);
+		for(String key:loggerSet)
+			appenderMap.remove(key);
+		return appenderMap;
 	}
-	public List<String> detectDeadLogger(
+	public Map<String,Integer> detectDeadLogger(
 			String sourceValue
 			,String configValue
 			,String formatValue
 			,String libraryValue){
 		Set<String> sourceLoggerSet=new HashSet<>();
 		Set<String> loggerSet=new HashSet<>();
-		SAXReader reader = new SAXReader();
+		Map<String,Integer> loggerMap=new HashMap<>();
+		SAXReader reader = new MySAXReader();
+		reader.setDocumentFactory(new LocatorAwareDocumentFactory());
 		reader.setEntityResolver(new EntityResolver() {
 	        @Override
 	        public InputSource resolveEntity(String publicId, String systemId)
@@ -181,7 +205,10 @@ public class DeadConfigurationErrorDetection {
 		        	if(element.getName().trim().toLowerCase().equals("loggers")){
 		        		for(Element logger:(List<Element>)element.elements()){
 		        			if(logger.attributeValue("name")!=null)
+		        			{
 		        				loggerSet.add(logger.attributeValue("name"));
+		        				loggerMap.put(logger.attributeValue("name"), ((LocationAwareElement)logger).getLineNumber());
+		        			}
 		        		}
 		        	}
 		        }
@@ -198,6 +225,7 @@ public class DeadConfigurationErrorDetection {
 				for (Element element:(List<Element>)root.elements()){
 		        	if(element.getName().trim().toLowerCase().equals("logger")){
 		        		loggerSet.add(element.attributeValue("name"));
+		        		loggerMap.put(element.attributeValue("name"), ((LocationAwareElement)element).getLineNumber());
 		        	}
 		        }
 			}
@@ -215,6 +243,7 @@ public class DeadConfigurationErrorDetection {
 				for (Element element:(List<Element>)root.elements()){
 		        	if(element.getName().trim().toLowerCase().equals("logger")){
 		        		loggerSet.add(element.attributeValue("name"));
+		        		loggerMap.put(element.attributeValue("name"), ((LocationAwareElement)element).getLineNumber());
 		        	}
 		        }
 			}
@@ -225,8 +254,6 @@ public class DeadConfigurationErrorDetection {
                 "UTF-8", "", "", sourceValue);
 		for(LoggerProfiler logger:loggers)
 			sourceLoggerSet.add(logger.getName());
-//		for(String tmp:sourceLoggerSet)
-//			System.out.println(tmp);
 		Set<String> removeSet=new HashSet<>();
 		for(String logger:loggerSet)
 		{
@@ -234,17 +261,10 @@ public class DeadConfigurationErrorDetection {
 				if(sourceLogger.startsWith(logger))
 					removeSet.add(logger);
 		}
-//		System.out.println(removeSet.size());
-//		for(String tmp:removeSet)
-//        	System.out.println(tmp);
-//		System.out.println("----------------");
-//		for(String tmp:loggerSet)
-//        	System.out.println(tmp);
-//		System.out.println("----------------");
 		loggerSet.removeAll(removeSet);
-//		for(String tmp:loggerSet)
-//        	System.out.println(tmp);
+		for(String key:removeSet)
+        	loggerMap.remove(key);
 		
-		return new ArrayList<>(loggerSet);
+		return loggerMap;
 	}
 }

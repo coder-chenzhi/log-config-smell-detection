@@ -17,7 +17,8 @@ public class PropertiesToXmlUtil {
         Properties log4jProperties = new Properties();
         File f=new File(filepath);
         try {
-			log4jProperties.load(new FileInputStream(f));
+        	log4jProperties.load(new FileInputStream(f));
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -30,6 +31,6 @@ public class PropertiesToXmlUtil {
 	}
 	public static void main(String[] args)
 	{
-		System.out.println(getXml("D:/Document/OSS/Activemq-log4j.properties"));
+		System.out.println(getXml("D:/tmp/OSS/Zookeeper-log4j.properties"));
 	}
 }

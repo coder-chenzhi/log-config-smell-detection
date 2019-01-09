@@ -3,7 +3,9 @@ package edu.zju.util;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -13,11 +15,17 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import edu.zju.line.LocationAwareElement;
+import edu.zju.line.LocatorAwareDocumentFactory;
+import edu.zju.line.MySAXReader;
+
 public class UnlimitedOutputErrorDetection {
-	public List<String> detectUnlimitedOutput(String configValue,String formatValue,String libraryValue)
+	public Map<String, Integer> detectUnlimitedOutput(String configValue,String formatValue,String libraryValue)
 	{
 		List<String> errorAppenderList=new ArrayList<>();
-		SAXReader reader = new SAXReader();
+		Map<String,Integer> appednerMap=new HashMap<>();
+		SAXReader reader = new MySAXReader();
+		reader.setDocumentFactory(new LocatorAwareDocumentFactory());
 		reader.setEntityResolver(new EntityResolver() {
 	        @Override
 	        public InputSource resolveEntity(String publicId, String systemId)
@@ -43,9 +51,10 @@ public class UnlimitedOutputErrorDetection {
 	        for (Element element:(List<Element>)root.elements()){
 	        	if(element.getName().trim().toLowerCase().equals("appenders")){
 	        		for(Element appender:(List<Element>)element.elements()){
-	        			if("randomaccessfileappender".equals(appender.getName().toLowerCase())||"fileappender".equals(appender.getName().toLowerCase()))
-	        				errorAppenderList.add(appender.getName());
-	        			else if("rollingfileappender".equals(appender.getName().toLowerCase())||"rollingrandomaccessfileappender".equals(appender.getName().toLowerCase())){
+	        			if("randomaccessfile".equals(appender.getName().toLowerCase())||"file".equals(appender.getName().toLowerCase()))
+//	        				errorAppenderList.add(appender.getName());
+	        				appednerMap.put(appender.attributeValue("name"),((LocationAwareElement)appender).getLineNumber());
+	        			else if("rollingfile".equals(appender.getName().toLowerCase())||"rollingrandomaccessfile".equals(appender.getName().toLowerCase())){
 	        				boolean flag=false;
 	        				for(Element subProperty:(List<Element>)appender.elements()){
 	        					if("policies".equals(subProperty.getName().trim().toLowerCase()))
@@ -58,7 +67,8 @@ public class UnlimitedOutputErrorDetection {
         						}
 	        				}
 	        				if(!flag){
-	        					errorAppenderList.add(appender.getName());
+//	        					errorAppenderList.add(appender.getName());
+	        					appednerMap.put(appender.attributeValue("name"),((LocationAwareElement)appender).getLineNumber());
 	        				}
 	        			}
 	        				
@@ -80,7 +90,8 @@ public class UnlimitedOutputErrorDetection {
 	        		String classValue=element.attributeValue("class");
 	        		String appenderType =classValue.substring(classValue.lastIndexOf('.')+1);
 	        		if("FileAppender".equals(appenderType)||"DailyRollingFileAppender".equals(appenderType))
-	        			errorAppenderList.add(element.getName());
+//	        			errorAppenderList.add(element.getName());
+	        			appednerMap.put(element.attributeValue("name"),((LocationAwareElement)element).getLineNumber());
 	        	}
 	        }
 			}
@@ -99,7 +110,8 @@ public class UnlimitedOutputErrorDetection {
 						String classValue=element.attributeValue("class");
 		        		String appenderType =classValue.substring(classValue.lastIndexOf('.')+1);
 		        		if("FileAppender".equals(appenderType))
-		        			errorAppenderList.add(element.getName());
+//		        			errorAppenderList.add(element.getName());
+		        			appednerMap.put(element.attributeValue("name"),((LocationAwareElement)element).getLineNumber());
 		        		else if("RollingFileAppender".equals(appenderType)){
 		        			List<Element> appenderElements=element.elements();
 		        			for(Element appender:appenderElements){
@@ -107,13 +119,15 @@ public class UnlimitedOutputErrorDetection {
 		        					if(appender.attributeValue("class").indexOf("SizeAndTimeBasedRollingPolicy")!=-1||
 		        							appender.attributeValue("class").indexOf("TimeBasedRollingPolicy")!=-1){
 		        						if(appender.element("totalSizeCap")==null)
-		        							errorAppenderList.add(element.attributeValue("name"));
+//		        							errorAppenderList.add(element.attributeValue("name"));
+		        							appednerMap.put(element.attributeValue("name"),((LocationAwareElement)element).getLineNumber());
 		        					}
 		        					else if(appender.attributeValue("class").indexOf("FixedWindowRollingPolicy")!=-1){
 		        						for(Element tmpAppender:appenderElements){
 		        							if("triggeringPolicy".equals(tmpAppender.getName())){
 		        								if(tmpAppender.element("maxFileSize")==null)
-		        									errorAppenderList.add(element.attributeValue("name"));
+//		        									errorAppenderList.add(element.attributeValue("name"));
+		        									appednerMap.put(element.attributeValue("name"),((LocationAwareElement)element).getLineNumber());
 		        							}
 		        						}
 		        					}
@@ -124,6 +138,6 @@ public class UnlimitedOutputErrorDetection {
 				}
 			}
 		}
-		return errorAppenderList;
+		return appednerMap;
 	}
 }

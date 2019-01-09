@@ -17,7 +17,6 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-<<<<<<< HEAD
 import edu.zju.line.LocatorAwareDocumentFactory;
 import edu.zju.entity.Location;
 import edu.zju.line.LocationAwareElement;
@@ -29,14 +28,6 @@ public class MagicValueErrorDetection {
 		valueMap=new HashMap<String,List<Location>>();
 		SAXReader reader = new MySAXReader();
 		reader.setDocumentFactory(new LocatorAwareDocumentFactory());
-=======
-public class MagicValueErrorDetection {
-	Map<String,Integer> valueMap;
-	public List<String> detect(String configValue,String formatValue){
-		valueMap=new HashMap<String,Integer>();
-		List<String> ans=new ArrayList<>();
-		SAXReader reader = new SAXReader();
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 		reader.setEntityResolver(new EntityResolver() {
 	        @Override
 	        public InputSource resolveEntity(String publicId, String systemId)
@@ -60,44 +51,27 @@ public class MagicValueErrorDetection {
 			System.out.println("文档异常");
 			e.printStackTrace();
 		}
-<<<<<<< HEAD
 //        for(String value:valueMap.keySet()){
 //        	if(valueMap.get(value)>=0){
 //        		ans.add(value);
 //        	}
 //        }
         return valueMap;
-=======
-        for(String value:valueMap.keySet()){
-        	if(valueMap.get(value)>=0){
-        		ans.add(value);
-        	}
-        }
-        return ans;
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 	}
 	private void analyseElement(Element element)
 	{
 		if(element!=null){
 			if(!"".equals(element.getTextTrim())){
-<<<<<<< HEAD
 				List<Location> list=valueMap.getOrDefault(element.getTextTrim(), new ArrayList<Location>());
-				list.add(new Location("text->"+element.getName(),((LocationAwareElement)element).getLineNumber()));
+				list.add(new Location("text of "+element.getName(),((LocationAwareElement)element).getLineNumber()));
 				valueMap.put(element.getTextTrim(), list);
-=======
-				valueMap.put(element.getTextTrim(), valueMap.getOrDefault(element.getTextTrim(), 0));
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 			}
 			List<Attribute> attributeList=element.attributes();
 			if(attributeList!=null&&attributeList.size()!=0){
 				for(Attribute attribute:attributeList){
-<<<<<<< HEAD
 					List<Location> list=valueMap.getOrDefault(attribute.getText().trim(), new ArrayList<Location>());
-					list.add(new Location("Attribute->"+attribute.getName()+" of "+element.getName(),((LocationAwareElement)element).getLineNumber()));
+					list.add(new Location("Attribute of "+attribute.getName()+" of "+element.getName(),((LocationAwareElement)element).getLineNumber()));
 					valueMap.put(attribute.getText().trim(), list);
-=======
-					valueMap.put(attribute.getText().trim(), valueMap.getOrDefault(attribute.getText().trim(), 0));
->>>>>>> 5722469a0545fa0a054cb18ce63fc2d19526071c
 				}
 			}
 			List<Element> elementList=element.elements();
