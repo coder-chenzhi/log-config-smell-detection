@@ -1,4 +1,4 @@
-package edu.zju.util;
+package edu.zju.detection;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.zju.util.PropertiesToXmlUtil;
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;

@@ -1,14 +1,13 @@
 package edu.zju;
 
-import java.util.List;
-import java.util.Map;
-
+import edu.zju.detection.DeadConfigurationErrorDetection;
+import edu.zju.detection.UnlimitedOutputErrorDetection;
+import edu.zju.entity.Location;
+import edu.zju.detection.MagicValueErrorDetection;
 import org.apache.commons.cli.*;
 
-import edu.zju.util.DeadConfigurationErrorDetection;
-import edu.zju.util.MagicValueErrorDetection;
-import edu.zju.util.UnlimitedOutputErrorDetection;
-import edu.zju.entity.Location;
+import java.util.List;
+import java.util.Map;
 
 public class Main {
 
@@ -55,51 +54,68 @@ public class Main {
             System.exit(1);
             return;
         }
-        System.out.println("MagicValueErrorDetection");
+        System.out.println("########################################");
+        System.out.println("####### MagicValueErrorDetection #######");
+        System.out.println("########################################");
         MagicValueErrorDetection magicValue=new MagicValueErrorDetection();
         Map<String,List<Location>> valueMap=magicValue.detect(configValue,formatValue);
-        for(String tmp:valueMap.keySet())
-        {
-            System.out.printf("value:%-60s\t",addZeroForNum(tmp,60));
-            List<Location> list=valueMap.get(tmp);
-            System.out.printf("Times:%-3s\t",list.size());
-            System.out.printf("Location:{");
-            for(int i=0;i<list.size();i++){
-                Location l=list.get(i);
-                if(i==0)
-                    System.out.printf("%s",l.getDescribe()+":"+"line"+l.getLine());
-                else
-                    System.out.printf(",%s",l.getDescribe()+":"+"line"+l.getLine());
+        if (valueMap == null || valueMap.size() == 0) {
+            System.out.println("No instances are detected!");
+        } else {
+            for(String tmp:valueMap.keySet()) {
+                // TODO filter
+                if (valueMap.get(tmp).size() <= 2) {
+                    continue;
+                }
+                System.out.printf("value:%-60s\t",addZeroForNum(tmp,60));
+                List<Location> list=valueMap.get(tmp);
+                System.out.printf("Times:%-3s\t",list.size());
+                System.out.printf("Location:{");
+                for(int i=0;i<list.size();i++){
+                    Location l=list.get(i);
+                    if(i==0)
+                        System.out.printf("%s",l.getDescribe()+":"+"line"+l.getLine());
+                    else
+                        System.out.printf(",%s",l.getDescribe()+":"+"line"+l.getLine());
+                }
+                System.out.println("}");
+                //这里的还是没有进行判断的
             }
-            System.out.println("}");
-            //这里的还是没有进行判断的
         }
         System.out.println();
-        System.out.println("DeadConfigurationErrorDetection");
+        System.out.println("#########################################");
+        System.out.println("#### DeadConfigurationErrorDetection ####");
+        System.out.println("#########################################");
         DeadConfigurationErrorDetection dead=new DeadConfigurationErrorDetection();
         Map<String, Integer> deadAppenderList=dead.detectDeadAppender(sourceValue, configValue, formatValue, libraryValue);
-        
         Map<String, Integer> deadLoggerList=dead.detectDeadLogger(sourceValue, configValue, formatValue, libraryValue);
+        if ((deadAppenderList == null || deadAppenderList.size() == 0) &&
+                (deadLoggerList == null || deadLoggerList.size() == 0)) {
+            System.out.println("No instances are detected!");
+        }
         for(String tmp:deadAppenderList.keySet())
         {
             System.out.printf("Unused appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
-            
             //这里的还是没有进行判断的
         }
-        System.out.println();
         for(String tmp:deadLoggerList.keySet())
         {
             System.out.printf("Unused logger: name: %-20s line: %s\n",addZeroForNum(tmp,20),deadAppenderList.get(tmp));
         }
         System.out.println();
-        System.out.println();
-        System.out.println("UnlimitedOutputErrorDetection");
+        System.out.println("#########################################");
+        System.out.println("##### UnlimitedOutputErrorDetection #####");
+        System.out.println("#########################################");
         UnlimitedOutputErrorDetection unlimitedDetect=new UnlimitedOutputErrorDetection();
         Map<String, Integer> outlimitList=unlimitedDetect.detectUnlimitedOutput(configValue, formatValue, libraryValue);
-        for(String tmp:outlimitList.keySet())
-          {
-            System.out.printf("Unlimited Appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),outlimitList.get(tmp));
-          }
+        if (outlimitList == null || outlimitList.size() == 0) {
+            System.out.println("No instances are detected!");
+        } else {
+            for(String tmp:outlimitList.keySet()) {
+                System.out.printf("Unlimited Appender: name: %-20s line: %s\n",addZeroForNum(tmp,20),outlimitList.get(tmp));
+            }
+        }
+
     }
     public static String addZeroForNum(String str, int strLength) {
         int strLen = str.length();
@@ -112,7 +128,6 @@ public class Main {
                 strLen = str.length();
             }
         }
-     
         return str;
     }
  

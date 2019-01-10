@@ -70,7 +70,7 @@ public class CodeUtil {
 				lineSet.add(lineNum);
 			}
 		} catch (InvalidInputException e) {
-			logger.warn("Invalid source in AbstractLinesOfCode", e);
+			logger.debug("Invalid source in AbstractLinesOfCode", e);
 		}
 		return lineSet.size();
 	}

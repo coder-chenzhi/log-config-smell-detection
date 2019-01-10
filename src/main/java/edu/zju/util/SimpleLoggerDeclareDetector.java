@@ -1,7 +1,7 @@
-package edu.zju;
+package edu.zju.util;
 
 import com.google.common.io.Files;
-import edu.zju.util.CodeUtil;
+import edu.zju.entity.LoggerProfiler;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ public class SimpleLoggerDeclareDetector {
     static final Logger LOG = LoggerFactory.getLogger(SimpleLoggerDeclareDetector.class);
 
     public List<LoggerProfiler> retrieveLoggers(String projectName, String sourcePath, String sourceEncoding, String jarPath,
-                                String dependency, String outputDir) {
+                                                String dependency, String outputDir) {
         File root = new File(sourcePath);
         String[] classPathEntries = CodeUtil.valueToStringArray(dependency + ";" + jarPath);
         String[] sourcePathEntries = CodeUtil.valueToStringArray(sourcePath);
@@ -199,14 +199,11 @@ public class SimpleLoggerDeclareDetector {
     }
 
     public static void main(String[] args) {
-
         SimpleLoggerDeclareDetector detector = new SimpleLoggerDeclareDetector();
         List<LoggerProfiler> loggers = detector.retrieveLoggers("storm", "D:/Document/Github/storm",
                 "UTF-8", "", "", "D:/Document/Github/storm");
         for (LoggerProfiler logger : loggers) {
             System.out.println(logger.toString());
         }
-
     }
-
 }

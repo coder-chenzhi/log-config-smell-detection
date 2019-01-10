@@ -2,7 +2,6 @@ package edu.zju.detection;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,8 +18,8 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import edu.zju.LoggerProfiler;
-import edu.zju.SimpleLoggerDeclareDetector;
+import edu.zju.entity.LoggerProfiler;
+import edu.zju.util.SimpleLoggerDeclareDetector;
 import edu.zju.line.LocationAwareElement;
 import edu.zju.line.LocatorAwareDocumentFactory;
 import edu.zju.line.MySAXReader;
@@ -236,7 +235,6 @@ public class DeadConfigurationErrorDetection {
 				try {
 					document =DocumentHelper.parseText(PropertiesToXmlUtil.getXml(configValue));
 				} catch (DocumentException e) {
-					// TODO Auto-generated catch block
 					System.out.println("解析log4j的properties出错");
 					e.printStackTrace();
 				}

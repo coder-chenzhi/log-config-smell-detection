@@ -1,4 +1,4 @@
-package edu.zju;
+package edu.zju.entity;
 
 public class LoggerProfiler {
     private String varName; // the name of the logger's variable
