@@ -19,6 +19,7 @@ import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.print.DocFlavor;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -56,11 +57,11 @@ public class GetLogger {
     }
 
     private static Map<String, String> getClasspath(String project, Map<String, String> projectsRoot) throws IOException {
-        String classpathFile = "wala/{project}_classpath.txt".replace("{project}", project.toLowerCase());
+        String classpathFile = "wala/classpath/{project}_classpath.txt".replace("{project}", project.toLowerCase());
         File classPath = new File(GetLogger.class.getClassLoader().getResource(classpathFile).getFile());
         String fileContent =  Files.toString(classPath, Charsets.UTF_8);
         for (String key: projectsRoot.keySet()) {
-            fileContent.replace(key, projectsRoot.get(key));
+            fileContent = fileContent.replace(key, projectsRoot.get(key));
         }
         Map<String, String> classpathEntries = new HashMap<>();
         for (String line : fileContent.split(System.lineSeparator())) {
@@ -71,49 +72,75 @@ public class GetLogger {
         return classpathEntries;
     }
 
+    private static Set<String> buildInternalClassesFromSource(String srcRoot) {
+        // TODO
+        return null;
+    }
+
+    private static Set<IClass> retriveLoggerFromClass(IClass clazz, ClassHierarchy cha, IAnalysisCacheView cache) {
+        // TODO
+        return null;
+    }
+
+    private static Set<IClass> getSubtype(IClass clazz, ClassHierarchy cha) {
+        Set<IClass> classes = new HashSet<>();
+        classes.addAll(cha.getImplementors(clazz.getReference()));
+        classes.addAll(cha.computeSubClasses(clazz.getReference()));
+        return classes;
+    }
+
     public static void retriveLogger(String projectName, Map<String, String> projectsRoot) throws Exception {
         // 1.create an analysis scope representing the source file application
         File exFile = new File(GetLogger.class.getClassLoader().getResource("wala/no_exclusion.txt").getFile());
         Map<String, String> classpathEntries = getClasspath(projectName, projectsRoot);
-        String classpath = classpathEntries.keySet().stream().collect(Collectors.joining(File.pathSeparator));
+        String classpath = String.join(File.pathSeparator, classpathEntries.keySet());
         AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exFile);
         // 2. build a class hierarchy, call graph, and system dependence graph
         ClassHierarchy cha = ClassHierarchyFactory.make(scope);
         LOG.info(cha.getNumberOfClasses() + " classes");
 
+        Set<IClass> internalClasses = new HashSet<>();
+        Set<IClass> externalDirectInvokedClasses = new HashSet<>();
         Iterator<IClass> classes = cha.iterator();
         IAnalysisCacheView cache = new AnalysisCacheImpl();
 
-        IClass clazz;
-
+        // 3. get all internal classes
         while (classes.hasNext()) {
-            clazz = classes.next();
+            IClass clazz = classes.next();
 
             //cha.getImplementors(clazz.getReference());
             //cha.computeSubClasses(clazz.getReference());
             if (filter(clazz.toString())) {
                 continue;
             }
-            String loggerScope = "Internal";
             // check internal or external
             try {
                 JarFileEntry moduleEntry = (JarFileEntry) ((ShrikeClass) clazz).getModuleEntry();
                 String jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
                 LOG.debug("Found {} in {}", clazz.toString(), jarFile);
                 if (classpathEntries.containsKey(jarFile)) {
-                    loggerScope = classpathEntries.get(jarFile);
-                } else {
-                    // if there is no match, maybe jvm related jar
-                    loggerScope = "External";
+                    String loggerScope = classpathEntries.get(jarFile);
+                    if ("Internal".equals(loggerScope)) {
+                        internalClasses.add(clazz);
+                    }
+                    // if it belongs to mixed jar, which means this jar contains both internal classes and external classes
+                    // simply check whether the class' name contains project's name
+                    if ("Mixed".equals(loggerScope)) {
+                        if (clazz.toString().toLowerCase().contains(projectName.toLowerCase())) {
+                            internalClasses.add(clazz);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 // if the clazz are loaded from .class file, then we will fail to get the jar file in this way
                 // we assume the .class file are all internal file here
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
-//            if (!clazz.getName().toString().toLowerCase().contains("cassandra")) {
-//                continue;
-//            }
+        }
+        LOG.info("Number of internal class:", internalClasses.size());
+
+        // handle internal classes
+        for (IClass clazz : internalClasses) {
             LOG.info("class:\t" + clazz);
             for(IMethod m: clazz.getDeclaredMethods()) {
                 // skip abstract method
@@ -130,8 +157,22 @@ public class GetLogger {
                         SSAInstruction instruction = instructions[i];
                         if (instruction instanceof SSAInvokeInstruction) {
                             IMethod callee = cha.resolveMethod(((SSAInvokeInstruction) instruction).getDeclaredTarget()); // can be null
-                            String className = callee.getDeclaringClass().getName().toString();
+                            IClass calleeClass = callee.getDeclaringClass();
+                            String className = calleeClass.getName().toString();
                             String methodName = callee.getName().toString();
+                            if (!internalClasses.contains(calleeClass)) {
+                                Set<IClass> subtypes = new HashSet<>();
+                                subtypes.add(calleeClass);
+                                // find all subtype (subclass and implemented-class)
+                                if (!className.contains("Ljava/lang/Object")) {
+                                    subtypes.addAll(getSubtype(calleeClass, cha));
+                                }
+                                externalDirectInvokedClasses.addAll(subtypes.stream().
+                                        filter(subtype -> !internalClasses.contains(subtype)).
+                                        collect(Collectors.toList()));
+
+                            }
+
 
                             if (GetLogger.LoggerFunctions.containsKey(className + "." + methodName)) {
                                 String libraryName = GetLogger.LoggerFunctions.get(className + "." + methodName);
@@ -140,7 +181,7 @@ public class GetLogger {
                                     String loggerName = "Unknown";
                                     if (ir.getSymbolTable().isStringConstant(varIndex)) {
                                         loggerName = ir.getSymbolTable().getValueString(varIndex);
-                                        LOG.info("\t\tDetected {} {} logger naming by string:\t{}", loggerScope, libraryName, loggerName);
+                                        LOG.info("\t\tDetected Internal {} logger naming by string:\t{}", libraryName, loggerName);
                                     } else {
                                         // Every class literal will generate a SSALoadMetadataInstruction,
                                         // which will include the name of class literal.
@@ -149,9 +190,9 @@ public class GetLogger {
                                         SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
                                         if (defineInst instanceof SSALoadMetadataInstruction) {
                                             loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
-                                            LOG.info("\t\tDetected {} {} logger naming by class literal:\t {}", loggerScope, libraryName, loggerName);
+                                            LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
                                         } else {
-                                            LOG.info("\t\tDetected {} {} logger but unknown name", loggerScope, libraryName);
+                                            LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
                                         }
                                     }
 
@@ -165,16 +206,28 @@ public class GetLogger {
                     LOG.error("\tError while creating IR for method: " + m.getReference(), e);
                 }
             }
+
         }
+
+        // TODO handle invoked external class
+        System.out.println("ImmediateExternal classes: " + externalDirectInvokedClasses.size());
 
     }
 
     public static void main(String[] args) throws Exception {
         Map<String, String> projectsRoot = new HashMap<String, String>() {
             {
-                put("cassandra_root", "/home/chenzhi/Data/projects/jar/apache-cassandra-3.11.3-bin/apache-cassandra-3.11.3");
-                put("activemq_root", "/home/chenzhi/Data/projects/jar/apache-activemq-5.15.8");
-                put("JAVA_HOME", "/usr/lib/jvm/java-8-openjdk-amd64");
+                put("{activemq_root}", "/home/chenzhi/Data/projects/jar/apache-activemq-5.15.8");
+                put("{ambari_root}", "/home/chenzhi/Data/projects/jar/ambari-server-2.7.3.0.0-dist");
+                put("{cassandra_root}", "/home/chenzhi/Data/projects/jar/apache-cassandra-3.11.3-bin/apache-cassandra-3.11.3");
+                put("{flume_root}", "/home/chenzhi/Data/projects/jar/apache-flume-1.8.0-bin");
+                put("{hadoop_root}", "/home/chenzhi/Data/projects/jar/hadoop-2.9.2");
+                put("{hbase_root}", "/home/chenzhi/Data/projects/jar/hbase-2.1.1");
+                put("{hive_root}", "/home/chenzhi/Data/projects/jar/apache-hive-3.1.1-bin");
+                put("{solr_root}", "/home/chenzhi/Data/projects/jar/solr-7.5.0");
+                put("{storm_root}", "/home/chenzhi/Data/projects/jar/apache-storm-1.2.2");
+                put("{zookeeper_root}", "/home/chenzhi/Data/projects/jar/zookeeper-3.4.13");
+                put("{JAVA_HOME}", "/usr/lib/jvm/java-8-openjdk-amd64");
             }
         };
         retriveLogger("cassandra", projectsRoot);
