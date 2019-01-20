@@ -7,7 +7,7 @@
 {cassandra_root}/lib/apache-cassandra-thrift-3.11.3.jar Internal
 {cassandra_root}/lib/asm-5.0.4.jar External
 {cassandra_root}/lib/caffeine-2.2.6.jar External
-{cassandra_root}/lib/cassandra-driver-core-3.0.1-shaded.jar Internal
+{cassandra_root}/lib/cassandra-driver-core-3.0.1-shaded.jar External
 {cassandra_root}/lib/commons-cli-1.1.jar External
 {cassandra_root}/lib/commons-codec-1.9.jar External
 {cassandra_root}/lib/commons-lang3-3.1.jar External
