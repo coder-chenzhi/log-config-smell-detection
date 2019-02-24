@@ -49,7 +49,9 @@ public class GetLogger {
     };
 
     private static Boolean filter(String clazz) {
-        final List<String> filterClasses = new ArrayList<String>(Arrays.asList("Lsun/swing", "Ljava", "Ljavafx"));
+        final List<String> filterClasses = new ArrayList<String>(
+                Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavax/swing", "Lcom/sun/java/swing", "Lcom/sun/swing",
+                        "Lsun/awt", "Ljava/awt", "Lsun/applet", "Ljava/applet","Lorg/codehaus/groovy"));
         for (String s : filterClasses) {
             if (clazz.startsWith(s)) {
                 return true;
@@ -113,7 +115,8 @@ public class GetLogger {
 
             //cha.getImplementors(clazz.getReference());
             //cha.computeSubClasses(clazz.getReference());
-            if (filter(clazz.toString())) {
+            if (filter(clazz.getName().toString())) {
+                LOG.debug("class {} has been filterd", clazz.toString());
                 continue;
             }
             // check internal or external
@@ -123,12 +126,12 @@ public class GetLogger {
                 LOG.debug("Found {} in {}", clazz.toString(), jarFile);
                 if (classpathEntries.containsKey(jarFile)) {
                     String loggerScope = classpathEntries.get(jarFile);
-                    if ("Internal".equals(loggerScope)) {
+                    if ("internal".equals(loggerScope.toLowerCase())) {
                         internalClasses.add(clazz);
                     }
                     // if it belongs to mixed jar, which means this jar contains both internal classes and external classes
                     // simply check whether the class' name contains project's name
-                    if ("Mixed".equals(loggerScope)) {
+                    if ("mixed".equals(loggerScope.toLowerCase())) {
                         if (clazz.toString().toLowerCase().contains(projectName.toLowerCase())) {
                             internalClasses.add(clazz);
                         }
@@ -228,6 +231,10 @@ public class GetLogger {
             IClass clazz = externalDirectInvokedClasses.iterator().next();
             externalDirectInvokedClasses.remove(clazz);
             visitedClasses.add(clazz);
+            if (filter(clazz.getName().toString())) {
+                LOG.debug("class {} has been filterd", clazz.toString());
+                continue;
+            }
             LOG.info("class:\t" + clazz);
             for(IMethod m: clazz.getDeclaredMethods()) {
                 // skip abstract method
@@ -319,10 +326,20 @@ public class GetLogger {
                 put("{hive_root}", "/home/chenzhi/Data/projects/jar/apache-hive-3.1.1-bin");
                 put("{solr_root}", "/home/chenzhi/Data/projects/jar/solr-7.5.0");
                 put("{storm_root}", "/home/chenzhi/Data/projects/jar/apache-storm-1.2.2");
-                put("{zookeeper_root}", "/home/chenzhi/Data/projects/jar/zookeeper-3.4.13");
+                put("{zookeeper_root}", "/home/chenzhi/Data/pr ojects/jar/zookeeper-3.4.13");
                 put("{JAVA_HOME}", "/usr/lib/jvm/java-8-openjdk-amd64");
+                put("{auctionplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/auctionplatform");
+                put("{buy2_root}", "/home/chenzhi/Data/projects/Prebuilt/buy2");
+                put("{diamond_root}", "/home/chenzhi/Data/projects/Prebuilt/diamond");
+                put("{fundplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/fundplatform");
+                put("{itemcenter_root}", "/home/chenzhi/Data/projects/Prebuilt/itemcenter");
+                put("{jingwei3_root}", "/home/chenzhi/Data/projects/Prebuilt/jingwei-worker");
+                put("{notify_root}", "/home/chenzhi/Data/projects/Prebuilt/notify");
+                put("{tddl-server_root}", "/home/chenzhi/Data/projects/Prebuilt/tddl-server");
+                put("{tlogserver_root}", "/home/chenzhi/Data/projects/Prebuilt/tlogserver");
+                put("{tradeplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform");
             }
         };
-        retriveLogger("zookeeper", projectsRoot);
+        retriveLogger("tradeplatform", projectsRoot);
     }
 }
