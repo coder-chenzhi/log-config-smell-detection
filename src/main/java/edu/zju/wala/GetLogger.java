@@ -17,6 +17,7 @@ import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAInvokeInstruction;
 import com.ibm.wala.ssa.SSALoadMetadataInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,11 +207,22 @@ public class GetLogger {
                                         if (defineInst instanceof SSALoadMetadataInstruction) {
                                             loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
                                             LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
-                                        } else {
-                                            // TODO handle some special case
+                                        } else if (defineInst instanceof SSAInvokeInstruction) {
+                                            // handle some special case
                                             // 1. private final Log log = LogFactory.getLog(getClass());
                                             // 2. private final Log log = LogFactory.getLog(Main.class.getName());
                                             // 3. private final Log log = LogFactory.getLog(this.getClass());
+                                            // all these three cases are taking the return value of some function
+                                            // as the logger, and the return value is the containing class of the function
+                                            MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
+                                            if ("getClass".equals(method.getName().toString()) ||
+                                                    "getName".equals(method.getName().toString())) {
+                                                loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
+                                                LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
+                                            } else {
+                                                LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
+                                            }
+                                        } else {
                                             LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
                                         }
                                     }
@@ -298,6 +310,21 @@ public class GetLogger {
                                             if (defineInst instanceof SSALoadMetadataInstruction) {
                                                 loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
                                                 LOG.info("\t\tDetected External {} logger naming by class literal:\t {}", libraryName, loggerName);
+                                            } else if (defineInst instanceof SSAInvokeInstruction) {
+                                                // handle some special case
+                                                // 1. private final Log log = LogFactory.getLog(getClass());
+                                                // 2. private final Log log = LogFactory.getLog(Main.class.getName());
+                                                // 3. private final Log log = LogFactory.getLog(this.getClass());
+                                                // all these three cases are taking the return value of some function
+                                                // as the logger, and the return value is the containing class of the function
+                                                MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
+                                                if ("getClass".equals(method.getName().toString()) ||
+                                                        "getName".equals(method.getName().toString())) {
+                                                    loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
+                                                    LOG.info("\t\tDetected External {} logger naming by class literal:\t {}", libraryName, loggerName);
+                                                } else {
+                                                    LOG.info("\t\tDetected External {} logger but unknown name", libraryName);
+                                                }
                                             } else {
                                                 LOG.info("\t\tDetected External {} logger but unknown name", libraryName);
                                             }
@@ -344,6 +371,6 @@ public class GetLogger {
                 put("{tradeplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform");
             }
         };
-        retriveLogger("tradeplatform", projectsRoot);
+        retriveLogger("jingwei3", projectsRoot);
     }
 }
