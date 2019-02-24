@@ -207,6 +207,10 @@ public class GetLogger {
                                             loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
                                             LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
                                         } else {
+                                            // TODO handle some special case
+                                            // 1. private final Log log = LogFactory.getLog(getClass());
+                                            // 2. private final Log log = LogFactory.getLog(Main.class.getName());
+                                            // 3. private final Log log = LogFactory.getLog(this.getClass());
                                             LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
                                         }
                                     }
