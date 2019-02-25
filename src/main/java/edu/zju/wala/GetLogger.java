@@ -16,13 +16,11 @@ import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAInvokeInstruction;
 import com.ibm.wala.ssa.SSALoadMetadataInstruction;
-import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.print.DocFlavor;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -51,8 +49,9 @@ public class GetLogger {
 
     private static Boolean filter(String clazz) {
         final List<String> filterClasses = new ArrayList<String>(
-                Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavax/swing", "Lcom/sun/java/swing", "Lcom/sun/swing",
-                        "Lsun/awt", "Ljava/awt", "Lsun/applet", "Ljava/applet","Lorg/codehaus/groovy"));
+                Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavax/swing", "Lcom/sun/swing",
+                        "Lsun/awt", "Ljava/awt", "Lsun/applet", "Ljava/applet", "Lcom/sun/java/swing",
+                        "Lorg/codehaus/groovy"));
         for (String s : filterClasses) {
             if (clazz.startsWith(s)) {
                 return true;
@@ -114,8 +113,6 @@ public class GetLogger {
         while (classes.hasNext()) {
             IClass clazz = classes.next();
 
-            //cha.getImplementors(clazz.getReference());
-            //cha.computeSubClasses(clazz.getReference());
             if (filter(clazz.getName().toString())) {
                 LOG.debug("class {} has been filterd", clazz.toString());
                 continue;
@@ -190,47 +187,7 @@ public class GetLogger {
                                         collect(Collectors.toList()));
                             }
 
-                            if (GetLogger.LoggerFunctions.containsKey(className + "." + methodName)) {
-                                String libraryName = GetLogger.LoggerFunctions.get(className + "." + methodName);
-                                if (instruction.getNumberOfUses() != 0) {
-                                    int varIndex = instruction.getUse(0);
-                                    String loggerName = "Unknown";
-                                    if (ir.getSymbolTable().isStringConstant(varIndex)) {
-                                        loggerName = ir.getSymbolTable().getValueString(varIndex);
-                                        LOG.info("\t\tDetected Internal {} logger naming by string:\t{}", libraryName, loggerName);
-                                    } else {
-                                        // Every class literal will generate a SSALoadMetadataInstruction,
-                                        // which will include the name of class literal.
-                                        // SSALoadMetadataInstruction will return a variable,
-                                        // which will be used by  getLogger() method.
-                                        SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
-                                        if (defineInst instanceof SSALoadMetadataInstruction) {
-                                            loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
-                                            LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
-                                        } else if (defineInst instanceof SSAInvokeInstruction) {
-                                            // handle some special case
-                                            // 1. private final Log log = LogFactory.getLog(getClass());
-                                            // 2. private final Log log = LogFactory.getLog(Main.class.getName());
-                                            // 3. private final Log log = LogFactory.getLog(this.getClass());
-                                            // all these three cases are taking the return value of some function
-                                            // as the logger, and the return value is the containing class of the function
-                                            MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
-                                            if ("getClass".equals(method.getName().toString()) ||
-                                                    "getName".equals(method.getName().toString())) {
-                                                loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
-                                                LOG.info("\t\tDetected Internal {} logger naming by class literal:\t {}", libraryName, loggerName);
-                                            } else {
-                                                LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
-                                            }
-                                        } else {
-                                            LOG.info("\t\tDetected Internal {} logger but unknown name", libraryName);
-                                        }
-                                    }
-
-                                } else {
-                                    LOG.warn("\t\tthe number of parameters of getLogger is not 1");
-                                }
-                            }
+                            doExtract(true, clazz, className, methodName, instruction, ir, cache);
                         }
                     }
                 }catch (Throwable e){
@@ -240,7 +197,7 @@ public class GetLogger {
 
         }
 
-        // TODO handle invoked external class
+        // handle invoked external class
         LOG.info("ImmediateExternal classes:  {}", externalDirectInvokedClasses.size());
         Set<IClass> visitedClasses = new HashSet<>(internalClasses);
         while(!externalDirectInvokedClasses.isEmpty()) {
@@ -292,48 +249,7 @@ public class GetLogger {
                                         filter(subtype -> !visitedClasses.contains(subtype)).
                                         collect(Collectors.toList()));
 
-
-                                if (GetLogger.LoggerFunctions.containsKey(className + "." + methodName)) {
-                                    String libraryName = GetLogger.LoggerFunctions.get(className + "." + methodName);
-                                    if (instruction.getNumberOfUses() != 0) {
-                                        int varIndex = instruction.getUse(0);
-                                        String loggerName = "Unknown";
-                                        if (ir.getSymbolTable().isStringConstant(varIndex)) {
-                                            loggerName = ir.getSymbolTable().getValueString(varIndex);
-                                            LOG.info("\t\tDetected External {} logger naming by string:\t{}", libraryName, loggerName);
-                                        } else {
-                                            // Every class literal will generate a SSALoadMetadataInstruction,
-                                            // which will include the name of class literal.
-                                            // SSALoadMetadataInstruction will return a variable,
-                                            // which will be used by  getLogger() method.
-                                            SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
-                                            if (defineInst instanceof SSALoadMetadataInstruction) {
-                                                loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
-                                                LOG.info("\t\tDetected External {} logger naming by class literal:\t {}", libraryName, loggerName);
-                                            } else if (defineInst instanceof SSAInvokeInstruction) {
-                                                // handle some special case
-                                                // 1. private final Log log = LogFactory.getLog(getClass());
-                                                // 2. private final Log log = LogFactory.getLog(Main.class.getName());
-                                                // 3. private final Log log = LogFactory.getLog(this.getClass());
-                                                // all these three cases are taking the return value of some function
-                                                // as the logger, and the return value is the containing class of the function
-                                                MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
-                                                if ("getClass".equals(method.getName().toString()) ||
-                                                        "getName".equals(method.getName().toString())) {
-                                                    loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
-                                                    LOG.info("\t\tDetected External {} logger naming by class literal:\t {}", libraryName, loggerName);
-                                                } else {
-                                                    LOG.info("\t\tDetected External {} logger but unknown name", libraryName);
-                                                }
-                                            } else {
-                                                LOG.info("\t\tDetected External {} logger but unknown name", libraryName);
-                                            }
-                                        }
-
-                                    } else {
-                                        LOG.warn("\t\tthe number of parameters of getLogger is not 1");
-                                    }
-                                }
+                                doExtract(false, clazz, className, methodName, instruction, ir, cache);
                             }
                         }
                     }
@@ -342,6 +258,71 @@ public class GetLogger {
                 }
             }
 
+        }
+    }
+
+    private static void doExtract(Boolean internal, IClass caller, String className, String methodName, SSAInstruction instruction,
+                                  IR ir, IAnalysisCacheView cache) {
+        String scope = internal?"Internal":"External";
+        if (GetLogger.LoggerFunctions.containsKey(className + "." + methodName)) {
+            String libraryName = GetLogger.LoggerFunctions.get(className + "." + methodName);
+            String jarFile = "unknown";
+            try {
+                JarFileEntry moduleEntry = (JarFileEntry) ((ShrikeClass) caller).getModuleEntry();
+                jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
+            } catch (Exception e) {
+
+            }
+
+            if (instruction.getNumberOfUses() != 0) {
+                int varIndex = instruction.getUse(0);
+                String loggerName = "Unknown";
+                if (ir.getSymbolTable().isStringConstant(varIndex)) {
+                    loggerName = ir.getSymbolTable().getValueString(varIndex);
+                    LOG.info("\t\tDetected\t{}\t{}\tlogger in\t{}\tnaming by string:\t{}",
+                            scope, libraryName, jarFile, loggerName);
+                } else {
+                    // Every class literal will generate a SSALoadMetadataInstruction,
+                    // which will include the name of class literal.
+                    // SSALoadMetadataInstruction will return a variable,
+                    // which will be used by  getLogger() method.
+                    SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
+                    if (defineInst instanceof SSALoadMetadataInstruction) {
+                        loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
+                        LOG.info("\t\tDetected\t{}\t{}\tlogger in\t{}\tnaming by class literal:\t{}",
+                                scope, libraryName, jarFile, loggerName);
+                    } else if (defineInst instanceof SSAInvokeInstruction) {
+                        // handle some special case
+                        // 1. private final Log log = LogFactory.getLog(getClass());
+                        // 2. private final Log log = LogFactory.getLog(Main.class.getName());
+                        // 3. private final Log log = LogFactory.getLog(this.getClass());
+                        // all these three cases are taking the return value of some function
+                        // as the logger, and the return value is the containing class of the function
+                        MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
+                        if ("getClass".equals(method.getName().toString())) {
+                            loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
+                            LOG.info("\t\tDetected\t{}\t{}\tlogger in\t{}\tnaming by class literal:\t{}",
+                                    scope, libraryName, jarFile, loggerName);
+                        } if ("getName".equals(method.getName().toString())) {
+                            if (defineInst.getNumberOfUses() != 0) {
+                                SSAInstruction preDefineInst = cache.getDefUse(ir).getDef(defineInst.getUse(0));
+                                if (preDefineInst instanceof SSALoadMetadataInstruction) {
+                                    loggerName = ((SSALoadMetadataInstruction) preDefineInst).getToken().toString();
+                                    LOG.info("\t\tDetected\t{}\t{}\tlogger in\t{}\tnaming by class literal:\t{}",
+                                            scope, libraryName, jarFile, loggerName);
+                                }
+                            }
+
+                        }
+                    }
+                    if ("Unknown".equals(loggerName)){
+                        LOG.info("\t\tDetected\t{}\t{}\tlogger in\t{}\tbut unknown name:\tUnknown", scope, libraryName, jarFile);
+                    }
+                }
+
+            } else {
+                LOG.warn("\t\tthe number of parameters of getLogger is not 1");
+            }
         }
     }
 
