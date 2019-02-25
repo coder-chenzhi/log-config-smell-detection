@@ -160,6 +160,7 @@ public class GetLogger {
             } catch (Exception e) {
                 // if the clazz are loaded from .class file, then we will fail to get the jar file in this way
                 // we assume the .class file are all internal file here
+                internalClasses.add(clazz);
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
         }
@@ -383,7 +384,7 @@ public class GetLogger {
                 "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3", "notify",
                 "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"jingwei3"};
+//        projects = new String[]{"jingwei3"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
         for (String pro : projects) {
