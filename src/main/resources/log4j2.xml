@@ -15,7 +15,7 @@
 			<AppenderRef ref="MyFile" level="info" />
 		</Root>
 
-		<Logger name="edu.zju.util.SimpleLoggerDeclareDetector" level="warn" additivity="false">
+		<Logger name="edu.zju.util.LoggerDeclareDetectorFromSource" level="warn" additivity="false">
 		</Logger>
 	</Loggers>
 </Configuration>

@@ -9,12 +9,13 @@ import org.junit.Test;
  */
 public class AppTest 
 {
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue()
-    {
-        assertTrue( true );
+
+    public void shouldAnswerWithTrue() {
+        edu.zju.Test.testRemoveElementFromSet();
+    }
+
+    public static void main(String[] args) {
+        AppTest test = new AppTest();
+        test.shouldAnswerWithTrue();
     }
 }
