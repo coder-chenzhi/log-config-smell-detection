@@ -7,12 +7,8 @@ import java.util.Set;
 public class Test {
 
     public static void testRemoveElementFromSet() {
-        Set<String> sets = new HashSet(Arrays.asList("a", "b", "c"));
-        while (!sets.isEmpty()) {
-            String tmp = sets.iterator().next();
-            sets.remove(tmp);
-            System.out.println(tmp);
-        }
+        String s = Thread.currentThread().getStackTrace()[2].getClassName();
+        System.out.println(s);
     }
 
     public static void main(String[] args) {

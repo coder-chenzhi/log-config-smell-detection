@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class SimpleLoggerDeclareDetector {
+public class LoggerDeclareDetectorFromSource {
 
-    static final Logger LOG = LoggerFactory.getLogger(SimpleLoggerDeclareDetector.class);
+    static final Logger LOG = LoggerFactory.getLogger(LoggerDeclareDetectorFromSource.class);
 
     public List<LoggerProfiler> retrieveLoggers(String projectName, String sourcePath, String sourceEncoding, String jarPath,
                                                 String dependency, String outputDir) {
@@ -199,7 +199,7 @@ public class SimpleLoggerDeclareDetector {
     }
 
     public static void main(String[] args) {
-        SimpleLoggerDeclareDetector detector = new SimpleLoggerDeclareDetector();
+        LoggerDeclareDetectorFromSource detector = new LoggerDeclareDetectorFromSource();
         List<LoggerProfiler> loggers = detector.retrieveLoggers("storm", "D:/Document/Github/storm",
                 "UTF-8", "", "", "D:/Document/Github/storm");
         for (LoggerProfiler logger : loggers) {
