@@ -366,7 +366,7 @@ public class GetLogger {
                 put("{hive_root}", "/home/chenzhi/Data/projects/jar/apache-hive-3.1.1-bin");
                 put("{solr_root}", "/home/chenzhi/Data/projects/jar/solr-7.5.0");
                 put("{storm_root}", "/home/chenzhi/Data/projects/jar/apache-storm-1.2.2");
-                put("{zookeeper_root}", "/home/chenzhi/Data/pr ojects/jar/zookeeper-3.4.13");
+                put("{zookeeper_root}", "/home/chenzhi/Data/projects/jar/zookeeper-3.4.13");
                 put("{JAVA_HOME}", "/usr/lib/jvm/java-8-openjdk-amd64");
                 put("{auctionplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/auctionplatform");
                 put("{buy2_root}", "/home/chenzhi/Data/projects/Prebuilt/buy2");
@@ -381,10 +381,10 @@ public class GetLogger {
             }
         };
         String[] projects = new String[]{"activemq", "ambari", "cassandra", "flume", "hadoop", "hbase", "hive", "solr",
-                "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3", "notify",
-                "tddl-server", "tlogserver", "tradeplatform"};
+                "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
+                "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-//        projects = new String[]{"jingwei3"};
+        projects = new String[]{"zookeeper"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
         for (String pro : projects) {
