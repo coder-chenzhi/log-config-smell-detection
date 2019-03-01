@@ -56,7 +56,7 @@ public class GetLogger {
             put("Lcom/alibaba/middleware/innerlog/LoggerFactory.getLogger", "InnerLog");
             put("Lcom/taobao/middleware/logger/LoggerFactory.getLogger", "Middleware");
             put("Lcom/ibatis/common/logging/LogFactory.getLog", "Ibatis");
-            put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon")
+            put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon");
         }
     };
 
