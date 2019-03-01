@@ -42,6 +42,7 @@ public class GetLogger {
         // @Jingwei: com.alibaba.middleware.jingwei.common.logger.LoggerFactory.getLogger(LogExample.class)
         // @Middleware: com.taobao.middleware.logger.LoggerFactory.getLogger(LogExample.class)
         // @InnerLog: com.alibaba.middleware.innerlog.LoggerFactory.getLogger(LogExample.class)
+        // @Ibatis: com.ibatis.common.logging.LogFactory.getLog(LogExample.class)
         {
             put("Lorg/apache/commons/logging/LogFactory.getLog", "CommonsLog");
             put("Lorg/jboss/logging/Logger.getLogger", "JBossLog");
@@ -54,6 +55,8 @@ public class GetLogger {
             put("Lcom/alibaba/middleware/jingwei/common/logger/JwLoggerFactoryV3.getLogger", "Jingwei");
             put("Lcom/alibaba/middleware/innerlog/LoggerFactory.getLogger", "InnerLog");
             put("Lcom/taobao/middleware/logger/LoggerFactory.getLogger", "Middleware");
+            put("Lcom/ibatis/common/logging/LogFactory.getLog", "Ibatis");
+            put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon")
         }
     };
 
