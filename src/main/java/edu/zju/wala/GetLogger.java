@@ -57,6 +57,7 @@ public class GetLogger {
             put("Lcom/taobao/middleware/logger/LoggerFactory.getLogger", "Middleware");
             put("Lcom/ibatis/common/logging/LogFactory.getLog", "Ibatis");
             put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon");
+            put("Lcom/taobao/tradespi/utils/Logger.create", "TradeSPI");
         }
     };
 
@@ -363,7 +364,7 @@ public class GetLogger {
             }
 
         } else {
-            LOG.warn("\t\tthe getLogger doesn't have parameters");
+            LOG.warn("{}\t{}\t{}\tthe getLogger doesn't have parameters", libraryName, jarFile, callerMethod);
         }
 
     }
