@@ -40,6 +40,8 @@ public class GetLogger {
         // @Slf4j: org.slf4j.LoggerFactory.getLogger(LogExample.class);
         // @TDDL: com.taobao.tddl.common.utils.logger.LoggerFactory.getLogger(LogExample.class);
         // @Jingwei: com.alibaba.middleware.jingwei.common.logger.LoggerFactory.getLogger(LogExample.class)
+        // @Middleware: com.taobao.middleware.logger.LoggerFactory.getLogger(LogExample.class)
+        // @InnerLog: com.alibaba.middleware.innerlog.LoggerFactory.getLogger(LogExample.class)
         {
             put("Lorg/apache/commons/logging/LogFactory.getLog", "CommonsLog");
             put("Lorg/jboss/logging/Logger.getLogger", "JBossLog");
@@ -51,6 +53,7 @@ public class GetLogger {
             put("Lcom/alibaba/middleware/jingwei/common/logger/LogFactory.getLogger", "Jingwei");
             put("Lcom/alibaba/middleware/jingwei/common/logger/JwLoggerFactoryV3.getLogger", "Jingwei");
             put("Lcom/alibaba/middleware/innerlog/LoggerFactory.getLogger", "InnerLog");
+            put("Lcom/taobao/middleware/logger/LoggerFactory.getLogger", "Middleware");
         }
     };
 
@@ -288,70 +291,78 @@ public class GetLogger {
                                   String calleeMethodName, SSAInstruction instruction, IR ir,
                                   IAnalysisCacheView cache, File output) {
         String scope = internal?"Internal":"External";
+        String libraryName;
+        // Check whether it is a method to get logger
         if (GetLogger.LoggerFunctions.containsKey(calleeClassName + "." + calleeMethodName)) {
-            String libraryName = GetLogger.LoggerFunctions.get(calleeClassName + "." + calleeMethodName);
+            libraryName = GetLogger.LoggerFunctions.get(calleeClassName + "." + calleeMethodName);
+        } else if ("getLog".equals(calleeMethodName) || "getLogger".equals(calleeMethodName)) {
+            // the name of the method indicate that this method is to get logger
+            libraryName = "Unknown";
+        } else {
+            return;
+        }
 //            if ("InnerLog".equals(libraryName)) {
 //                System.out.println();
 //            }
-            String jarFile = "Unknown";
-            try {
-                JarFileEntry moduleEntry = (JarFileEntry) ((ShrikeClass) callerClass).getModuleEntry();
-                jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
-            } catch (Exception e) {
+        String jarFile = "Unknown";
+        try {
+            JarFileEntry moduleEntry = (JarFileEntry) ((ShrikeClass) callerClass).getModuleEntry();
+            jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
+        } catch (Exception e) {
 
-            }
+        }
 
-            if (instruction.getNumberOfUses() != 0) {
-                String naming = "Unknown";
-                String loggerName = "Unknown";
-                int varIndex = instruction.getUse(0);
-                if (ir.getSymbolTable().isStringConstant(varIndex)) {
-                    loggerName = ir.getSymbolTable().getValueString(varIndex);
-                    naming = "naming by string";
-                } else {
-                    // Every class literal will generate a SSALoadMetadataInstruction,
-                    // which will include the name of class literal.
-                    // SSALoadMetadataInstruction will return a variable,
-                    // which will be used by  getLogger() method.
-                    SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
-                    if (defineInst instanceof SSALoadMetadataInstruction) {
-                        loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
+        if (instruction.getNumberOfUses() != 0) {
+            String naming = "Unknown";
+            String loggerName = "Unknown";
+            int varIndex = instruction.getUse(0);
+            if (ir.getSymbolTable().isStringConstant(varIndex)) {
+                loggerName = ir.getSymbolTable().getValueString(varIndex);
+                naming = "naming by string";
+            } else {
+                // Every class literal will generate a SSALoadMetadataInstruction,
+                // which will include the name of class literal.
+                // SSALoadMetadataInstruction will return a variable,
+                // which will be used by  getLogger() method.
+                SSAInstruction defineInst = cache.getDefUse(ir).getDef(varIndex);
+                if (defineInst instanceof SSALoadMetadataInstruction) {
+                    loggerName = ((SSALoadMetadataInstruction) defineInst).getToken().toString();
+                    naming = "naming by class literal";
+                } else if (defineInst instanceof SSAInvokeInstruction) {
+                    // handle some special case
+                    // 1. private final Log log = LogFactory.getLog(getClass());
+                    // 2. private final Log log = LogFactory.getLog(Main.class.getName());
+                    // 3. private final Log log = LogFactory.getLog(this.getClass());
+                    // all these three cases are taking the return value of some function
+                    // as the logger, and the return value is the containing class of the function
+                    MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
+                    if ("getClass".equals(method.getName().toString())) {
+                        loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
                         naming = "naming by class literal";
-                    } else if (defineInst instanceof SSAInvokeInstruction) {
-                        // handle some special case
-                        // 1. private final Log log = LogFactory.getLog(getClass());
-                        // 2. private final Log log = LogFactory.getLog(Main.class.getName());
-                        // 3. private final Log log = LogFactory.getLog(this.getClass());
-                        // all these three cases are taking the return value of some function
-                        // as the logger, and the return value is the containing class of the function
-                        MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
-                        if ("getClass".equals(method.getName().toString())) {
-                            loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
-                            naming = "naming by class literal";
-                        } if ("getName".equals(method.getName().toString())) {
-                            if (defineInst.getNumberOfUses() != 0) {
-                                SSAInstruction preDefineInst = cache.getDefUse(ir).getDef(defineInst.getUse(0));
-                                if (preDefineInst instanceof SSALoadMetadataInstruction) {
-                                    loggerName = ((SSALoadMetadataInstruction) preDefineInst).getToken().toString();
-                                    naming = "naming by class literal";
-                                }
+                    } if ("getName".equals(method.getName().toString())) {
+                        if (defineInst.getNumberOfUses() != 0) {
+                            SSAInstruction preDefineInst = cache.getDefUse(ir).getDef(defineInst.getUse(0));
+                            if (preDefineInst instanceof SSALoadMetadataInstruction) {
+                                loggerName = ((SSALoadMetadataInstruction) preDefineInst).getToken().toString();
+                                naming = "naming by class literal";
                             }
                         }
                     }
                 }
-                try {
-                    Files.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
-                            scope, libraryName, jarFile, callerMethod.toString(), naming, loggerName),
-                            output, Charsets.UTF_8);
-                } catch (IOException e) {
-                    LOG.warn("fail to write following record to file ");
-                    LOG.warn("{}\t{}\t{}\t{}\t{}\t{}", scope, libraryName, jarFile, callerMethod, naming, loggerName);
-                }
-
-            } else {
-                LOG.warn("\t\tthe getLogger doesn't have parameters");
             }
+            try {
+                Files.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
+                        scope, libraryName, jarFile, callerMethod.toString(), naming, loggerName),
+                        output, Charsets.UTF_8);
+            } catch (IOException e) {
+                LOG.warn("fail to write following record to file ");
+                LOG.warn("{}\t{}\t{}\t{}\t{}\t{}", scope, libraryName, jarFile, callerMethod, naming, loggerName);
+            }
+
+        } else {
+            LOG.warn("\t\tthe getLogger doesn't have parameters");
         }
+
     }
 
     public static void main(String[] args) throws Exception {
