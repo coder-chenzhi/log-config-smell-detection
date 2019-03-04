@@ -393,14 +393,21 @@ public class GetLogger {
                 put("{tddl-server_root}", "/home/chenzhi/Data/projects/Prebuilt/tddl-server");
                 put("{tlogserver_root}", "/home/chenzhi/Data/projects/Prebuilt/tlogserver");
                 put("{tradeplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform");
+                put("{tradeplatform3_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform3");
             }
         };
         String[] projects = new String[]{"activemq", "ambari", "cassandra", "flume", "hadoop", "hbase", "hive", "solr",
                 "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
                 "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"zookeeper"};
+        projects = new String[]{"tradeplatform3"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
+
+//        String prefix = "/media/chenzhi/7ae9463a-2a19-4d89-8179-d160bcb4ce1b";
+//        outputPath = "" + outputPath;
+//        for (String pro : projectsRoot.keySet()) {
+//            projectsRoot.put(pro, prefix + projectsRoot.get(pro));
+//        }
 
         for (String pro : projects) {
             retriveLogger(pro, projectsRoot, outputPath);
