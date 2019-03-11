@@ -12,10 +12,8 @@ import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
-import com.ibm.wala.ssa.IR;
-import com.ibm.wala.ssa.SSAInstruction;
-import com.ibm.wala.ssa.SSAInvokeInstruction;
-import com.ibm.wala.ssa.SSALoadMetadataInstruction;
+import com.ibm.wala.ssa.*;
+import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
@@ -29,42 +27,9 @@ import java.util.stream.Collectors;
 
 
 public class GetLogger {
-    private static final Logger LOG = LoggerFactory.getLogger(GetLogger.class);
+    //TODO implement detecting static field and getting default value, use ClassHierarchy.lookupClass()
 
-    private static final Map<String, String> LoggerFunctions = new HashMap<String, String>() {
-        // @CommonsLog: org.apache.commons.logging.LogFactory.getLog(LogExample.class)
-        // @JBossLog: org.jboss.logging.Logger.getLogger(LogExample.class);
-        // @JUL: java.util.logging.Logger.getLogger(LogExample.class.getName());
-        // @Log4j: org.apache.log4j.Logger.getLogger(LogExample.class);
-        // @Log4j2: org.apache.logging.log4j.LogManager.getLogger(LogExample.class);
-        // @Slf4j: org.slf4j.LoggerFactory.getLogger(LogExample.class);
-        // @TDDL: com.taobao.tddl.common.utils.logger.LoggerFactory.getLogger(LogExample.class);
-        // @Jingwei: com.alibaba.middleware.jingwei.common.logger.LoggerFactory.getLogger(LogExample.class)
-        // @Middleware: com.taobao.middleware.logger.LoggerFactory.getLogger(LogExample.class)
-        // @InnerLog: com.alibaba.middleware.innerlog.LoggerFactory.getLogger(LogExample.class)
-        // @Ibatis: com.ibatis.common.logging.LogFactory.getLog(LogExample.class)
-        {
-            put("Lorg/apache/commons/logging/LogFactory.getLog", "CommonsLog");
-            put("Lorg/jboss/logging/Logger.getLogger", "JBossLog");
-            put("Ljava/util/logging/Logger.getLogger", "JUL");
-            put("Lorg/apache/log4j/Logger.getLogger", "Log4j");
-            put("Lorg/apache/logging/log4j/LogManager.getLogger", "Log4j2");
-            put("Lorg/slf4j/LoggerFactory.getLogger", "Slf4j");
-            put("Lcom/taobao/tddl/common/utils/logger/LoggerFactory.getLogger", "TDDL");
-            put("Lcom/alibaba/middleware/jingwei/common/logger/LogFactory.getLogger", "Jingwei");
-            put("Lcom/alibaba/middleware/jingwei/common/logger/JwLoggerFactoryV3.getLogger", "Jingwei");
-            put("Lcom/alibaba/middleware/innerlog/LoggerFactory.getLogger", "InnerLog");
-            put("Lcom/taobao/middleware/logger/LoggerFactory.getLogger", "Middleware");
-            put("Lcom/ibatis/common/logging/LogFactory.getLog", "Ibatis");
-            put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon");
-            put("Lcom/taobao/tradespi/utils/Logger.create", "TradeSPI");
-            put("Lorg/eclipse/jetty/util/log/Log.getLogger", "Jetty");
-            put("Lorg/mortbay/log/Logger.getLogger", "Jetty");
-            put("Lorg/jboss/netty/logging/InternalLoggerFactory.getInstance", "Netty");
-            put("Lorg/datanucleus/util/NucleusLogger.getLoggerInstance", "Nucleus");
-            put("Lorg/jpox/util/JPOXLogger.getLoggerInstance", "JPOX");
-        }
-    };
+    private static final Logger LOG = LoggerFactory.getLogger(GetLogger.class);
 
     private static void getInitialValue(IAnalysisCacheView cache, IClass clazz) {
         for(IMethod method: clazz.getDeclaredMethods()) {
@@ -81,11 +46,7 @@ public class GetLogger {
             return true;
         }
         String className = clazz.getName().toString();
-        final List<String> filterClasses = new ArrayList<String>(
-                Arrays.asList("Lsun/swing", "Ljava/swing", "Ljavax/swing", "Lcom/sun/swing",
-                        "Lsun/awt", "Ljava/awt", "Lsun/applet", "Ljava/applet", "Lcom/sun/java/swing",
-                        "Lorg/codehaus/groovy"));
-        for (String s : filterClasses) {
+        for (String s : Constants.FilteredPackage) {
             if (className.startsWith(s)) {
                 return true;
             }
@@ -109,11 +70,6 @@ public class GetLogger {
         return classpathEntries;
     }
 
-    private static Set<String> buildInternalClassesFromSource(String srcRoot) {
-        // TODO
-        return null;
-    }
-
     private static Set<IClass> getSubtype(IClass clazz, ClassHierarchy cha) {
         Set<IClass> classes = new HashSet<>();
 //        if (clazz.getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
@@ -135,7 +91,7 @@ public class GetLogger {
         Map<String, String> classpathEntries = getClasspath(projectName, projectsRoot);
         String classpath = String.join(File.pathSeparator, classpathEntries.keySet());
         AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exFile);
-        // 2. build a class hierarchy, call graph, and system dependence graph
+        // 2. build a class hierarchy
         ClassHierarchy cha = ClassHierarchyFactory.make(scope);
         LOG.info(cha.getNumberOfClasses() + " classes");
 
@@ -148,7 +104,7 @@ public class GetLogger {
         while (classes.hasNext()) {
             IClass clazz = classes.next();
             if (filter(clazz)) {
-                LOG.debug("class {} has been filterd", clazz.toString());
+                LOG.debug("class {} has been filtered", clazz.toString());
                 continue;
             }
             // check internal or external
@@ -172,10 +128,11 @@ public class GetLogger {
             } catch (Exception e) {
                 // if the clazz are loaded from .class file, then we will fail to get the jar file
                 // we check the class name whether it contains "com/taobao" or "com/alibaba"
-                if (clazz.toString().toLowerCase().contains("taobao") ||
-                        clazz.toString().toLowerCase().contains("alibaba")) {
-                    internalClasses.add(clazz);
-                }
+//                if (clazz.toString().toLowerCase().contains("taobao") ||
+//                        clazz.toString().toLowerCase().contains("alibaba")) {
+//                    internalClasses.add(clazz);
+//                }
+                internalClasses.add(clazz);
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
         }
@@ -225,7 +182,8 @@ public class GetLogger {
                                         collect(Collectors.toList()));
                             }
 
-                            doExtract(true, clazz, method, calleeClassName, calleeMethodName, instruction, ir, cache, output);
+                            doExtract(true, clazz, method, calleeClassName, calleeMethodName,
+                                    instruction, ir, cha, cache, output);
                         }
                     }
                 }catch (Throwable e){
@@ -287,7 +245,8 @@ public class GetLogger {
                                         filter(subtype -> !visitedClasses.contains(subtype)).
                                         collect(Collectors.toList()));
 
-                                doExtract(false, clazz, method, calleeClassName, calleeMethodName, instruction, ir, cache, output);
+                                doExtract(false, clazz, method, calleeClassName, calleeMethodName,
+                                        instruction, ir, cha, cache, output);
                             }
                         }
                     }
@@ -300,13 +259,14 @@ public class GetLogger {
     }
 
     private static void doExtract(Boolean internal, IClass callerClass, IMethod callerMethod, String calleeClassName,
-                                  String calleeMethodName, SSAInstruction instruction, IR ir,
+                                  String calleeMethodName, SSAInstruction instruction, IR ir, ClassHierarchy cha,
                                   IAnalysisCacheView cache, File output) {
+
         String scope = internal?"Internal":"External";
         String libraryName;
         // Check whether it is a method to get logger
-        if (GetLogger.LoggerFunctions.containsKey(calleeClassName + "." + calleeMethodName)) {
-            libraryName = GetLogger.LoggerFunctions.get(calleeClassName + "." + calleeMethodName);
+        if (Constants.LoggerFunctions.containsKey(calleeClassName + "." + calleeMethodName)) {
+            libraryName = Constants.LoggerFunctions.get(calleeClassName + "." + calleeMethodName);
         } else if ("getLog".equals(calleeMethodName) || "getLogger".equals(calleeMethodName)) {
             // the name of the method indicate that this method is to get logger
             libraryName = "Unknown";
@@ -347,17 +307,32 @@ public class GetLogger {
                     // 3. private final Log log = LogFactory.getLog(this.getClass());
                     // all these three cases are taking the return value of some function
                     // as the logger, and the return value is the containing class of the function
+                    // TODO 4. private final Log log = LogFactory.getLog(Enum.type.getName());
+                    // this case is naming logger by enum field access
                     MethodReference method = ((SSAInvokeInstruction) defineInst).getDeclaredTarget();
                     if ("getClass".equals(method.getName().toString())) {
+                        // handle 1st and 3rd case
                         loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
                         naming = "naming by class literal";
                     } if ("getName".equals(method.getName().toString())) {
                         if (defineInst.getNumberOfUses() != 0) {
                             SSAInstruction preDefineInst = cache.getDefUse(ir).getDef(defineInst.getUse(0));
                             if (preDefineInst instanceof SSALoadMetadataInstruction) {
+                                // handle 2nd case
                                 loggerName = ((SSALoadMetadataInstruction) preDefineInst).getToken().toString();
                                 naming = "naming by class literal";
                             }
+                        }
+                    }
+                } else if (defineInst instanceof SSAGetInstruction) {
+                    // handle static field access and enum field access
+                    FieldReference field = ((SSAGetInstruction) defineInst).getDeclaredField();
+                    if ("Ljava/lang/String".equals(field.getFieldType().getName().toString())) {
+                        IClass clazz = cha.lookupClass(field.getDeclaringClass());
+                        StaticStringFields.addClass(clazz, cache);
+                        if (StaticStringFields.getStaticStringField(field) != null) {
+                            naming = "naming by string";
+                            loggerName = StaticStringFields.getStaticStringField(field);
                         }
                     }
                 }
@@ -404,6 +379,7 @@ public class GetLogger {
                 put("{tlogserver_root}", "/home/chenzhi/Data/projects/Prebuilt/tlogserver");
                 put("{tradeplatform_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform");
                 put("{tradeplatform3_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform3");
+                put("test_root", "");
             }
         };
 
@@ -412,7 +388,7 @@ public class GetLogger {
                 "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
                 "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"auctionplatform"};
+        projects = new String[]{"jingwei3"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
 //        String prefix = "/media/chenzhi/7ae9463a-2a19-4d89-8179-d160bcb4ce1b";
