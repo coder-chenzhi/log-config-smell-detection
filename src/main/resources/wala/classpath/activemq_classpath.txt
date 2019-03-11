@@ -102,3 +102,4 @@
 {activemq_root}/lib/web/apache-el-8.0.33.jar External
 {activemq_root}/lib/web/jetty-all-9.2.25.v20180606.jar External
 {activemq_root}/lib/extra/mqtt-client-1.14.jar External
+{activemq_root}/webapps/admin/WEB-INF/classes Internal

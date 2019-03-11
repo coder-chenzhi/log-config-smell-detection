@@ -62,9 +62,9 @@
 {auctionplatform_root}/WEB-INF/lib/aspectjweaver-1.7.4.jar External
 {auctionplatform_root}/WEB-INF/lib/asyncweb-client-1.0.0-20100414.080859-6.jar External
 {auctionplatform_root}/WEB-INF/lib/auction-common-1.0.0-20141118.084949-2.jar External
-{auctionplatform_root}/WEB-INF/lib/auctioncommon-1.5.8.jar External
-{auctionplatform_root}/WEB-INF/lib/auctioncommon-client-1.2.94.jar External
-{auctionplatform_root}/WEB-INF/lib/auctioncommonutil-0.7.7.jar External
+{auctionplatform_root}/WEB-INF/lib/auctioncommon-1.5.8.jar Internal
+{auctionplatform_root}/WEB-INF/lib/auctioncommon-client-1.2.94.jar Internal
+{auctionplatform_root}/WEB-INF/lib/auctioncommonutil-0.7.7.jar Internal
 {auctionplatform_root}/WEB-INF/lib/auctioncore-client-1.6.9.jar External
 {auctionplatform_root}/WEB-INF/lib/auctionlist-client-1.2.5-20150918.042517-7.jar External
 {auctionplatform_root}/WEB-INF/lib/auctionlist-common-1.2.5-20150918.042536-7.jar External

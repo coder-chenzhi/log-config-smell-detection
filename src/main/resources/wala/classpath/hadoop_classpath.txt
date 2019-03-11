@@ -234,3 +234,5 @@
 {hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-core-2.9.2.jar Internal
 {hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-hs-plugins-2.9.2.jar Internal
 {hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-hs-2.9.2.jar Internal
+{hadoop_root}/share/hadoop/tools/lib/aws-java-sdk-bundle-1.11.199.jar External
+{hadoop_root}/share/hadoop/common/lib/commons-beanutils-1.7.0.jar External

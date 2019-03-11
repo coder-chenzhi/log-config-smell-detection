@@ -58,6 +58,11 @@ public class GetLogger {
             put("Lcom/ibatis/common/logging/LogFactory.getLog", "Ibatis");
             put("Lcom/alibaba/common/logging/LoggerFactory.getLogger", "AliCommon");
             put("Lcom/taobao/tradespi/utils/Logger.create", "TradeSPI");
+            put("Lorg/eclipse/jetty/util/log/Log.getLogger", "Jetty");
+            put("Lorg/mortbay/log/Logger.getLogger", "Jetty");
+            put("Lorg/jboss/netty/logging/InternalLoggerFactory.getInstance", "Netty");
+            put("Lorg/datanucleus/util/NucleusLogger.getLoggerInstance", "Nucleus");
+            put("Lorg/jpox/util/JPOXLogger.getLoggerInstance", "JPOX");
         }
     };
 
@@ -165,9 +170,12 @@ public class GetLogger {
                     }
                 }
             } catch (Exception e) {
-                // if the clazz are loaded from .class file, then we will fail to get the jar file in this way
-                // we assume the .class file are all internal file here
-                internalClasses.add(clazz);
+                // if the clazz are loaded from .class file, then we will fail to get the jar file
+                // we check the class name whether it contains "com/taobao" or "com/alibaba"
+                if (clazz.toString().toLowerCase().contains("taobao") ||
+                        clazz.toString().toLowerCase().contains("alibaba")) {
+                    internalClasses.add(clazz);
+                }
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
         }
@@ -358,6 +366,8 @@ public class GetLogger {
                 Files.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
                         scope, libraryName, jarFile, callerMethod.toString(), naming, loggerName),
                         output, Charsets.UTF_8);
+//                LOG.warn(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
+//                        scope, libraryName, jarFile, callerMethod.toString(), naming, loggerName));
             } catch (IOException e) {
                 LOG.warn("fail to write following record to file ");
                 LOG.warn("{}\t{}\t{}\t{}\t{}\t{}", scope, libraryName, jarFile, callerMethod, naming, loggerName);
@@ -396,11 +406,13 @@ public class GetLogger {
                 put("{tradeplatform3_root}", "/home/chenzhi/Data/projects/Prebuilt/tradeplatform3");
             }
         };
+
+
         String[] projects = new String[]{"activemq", "ambari", "cassandra", "flume", "hadoop", "hbase", "hive", "solr",
                 "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
                 "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"tradeplatform3"};
+        projects = new String[]{"auctionplatform"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
 //        String prefix = "/media/chenzhi/7ae9463a-2a19-4d89-8179-d160bcb4ce1b";
