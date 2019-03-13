@@ -27,18 +27,8 @@ import java.util.stream.Collectors;
 
 
 public class GetLogger {
-    //TODO implement detecting static field and getting default value, use ClassHierarchy.lookupClass()
 
     private static final Logger LOG = LoggerFactory.getLogger(GetLogger.class);
-
-    private static void getInitialValue(IAnalysisCacheView cache, IClass clazz) {
-        for(IMethod method: clazz.getDeclaredMethods()) {
-            if (method.getName().toString().contains("clinit")) {
-                IR ir = cache.getIR(method);
-
-            }
-        }
-    }
 
     private static Boolean filter(IClass clazz) {
         String classloader = clazz.getClassLoader().getName().toString();
@@ -70,13 +60,6 @@ public class GetLogger {
         return classpathEntries;
     }
 
-    private static Set<IClass> getSubtype(IClass clazz, ClassHierarchy cha) {
-        Set<IClass> classes = new HashSet<>();
-//        if (clazz.getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
-        classes.addAll(cha.getImplementors(clazz.getReference()));
-        classes.addAll(cha.computeSubClasses(clazz.getReference()));
-        return classes;
-    }
 
     public static void retriveLogger(String projectName, Map<String, String> projectsRoot, String outputPath) throws Exception {
         // 0. prepare logger for output
@@ -95,52 +78,45 @@ public class GetLogger {
         ClassHierarchy cha = ClassHierarchyFactory.make(scope);
         LOG.info(cha.getNumberOfClasses() + " classes");
 
-        Set<IClass> internalClasses = new HashSet<>();
-        Set<IClass> externalDirectInvokedClasses = new HashSet<>();
         Iterator<IClass> classes = cha.iterator();
         IAnalysisCacheView cache = new AnalysisCacheImpl();
 
-        // 3. get all internal classes
         while (classes.hasNext()) {
+            String loggerScope = "External";
             IClass clazz = classes.next();
             if (filter(clazz)) {
                 LOG.debug("class {} has been filtered", clazz.toString());
                 continue;
             }
+            LOG.info("class:\t" + clazz);
             // check internal or external
             try {
                 JarFileEntry moduleEntry = (JarFileEntry) ((ShrikeClass) clazz).getModuleEntry();
                 String jarFile = moduleEntry.getJarFile().getName().replace("\\", "/");
                 LOG.debug("Found {} in {}", clazz.toString(), jarFile);
                 if (classpathEntries.containsKey(jarFile)) {
-                    String loggerScope = classpathEntries.get(jarFile);
+                    loggerScope = classpathEntries.get(jarFile);
                     if ("internal".equals(loggerScope.toLowerCase())) {
-                        internalClasses.add(clazz);
+                        loggerScope = "Internal";
                     }
                     // if it belongs to mixed jar, which means this jar contains both internal classes and external classes
                     // simply check whether the class' name contains project's name
                     if ("mixed".equals(loggerScope.toLowerCase())) {
                         if (clazz.toString().toLowerCase().contains(projectName.toLowerCase())) {
-                            internalClasses.add(clazz);
+                            loggerScope = "Internal";
                         }
                     }
                 }
             } catch (Exception e) {
                 // if the clazz are loaded from .class file, then we will fail to get the jar file
                 // we check the class name whether it contains "com/taobao" or "com/alibaba"
-//                if (clazz.toString().toLowerCase().contains("taobao") ||
-//                        clazz.toString().toLowerCase().contains("alibaba")) {
-//                    internalClasses.add(clazz);
-//                }
-                internalClasses.add(clazz);
+                if (clazz.toString().toLowerCase().contains("taobao") ||
+                        clazz.toString().toLowerCase().contains("alibaba")) {
+                    loggerScope = "Internal";
+                }
                 LOG.info("Throw exception when extracting the jarfile of {}", clazz.toString());
             }
-        }
-        LOG.info("Number of internal class: {}", internalClasses.size());
 
-        // handle internal classes
-        for (IClass clazz : internalClasses) {
-            LOG.info("class:\t" + clazz);
             for(IMethod method: clazz.getDeclaredMethods()) {
                 // skip abstract method
                 if (method.isAbstract()) {
@@ -169,20 +145,8 @@ public class GetLogger {
                             IClass calleeClass = calleeMethod.getDeclaringClass();
                             String calleeClassName = calleeClass.getName().toString();
                             String calleeMethodName = calleeMethod.getName().toString();
-                            if (!internalClasses.contains(calleeClass)) {
-                                Set<IClass> subtypes = new HashSet<>();
-                                subtypes.add(calleeClass);
-                                // find all subtype (subclass and implemented-class)
-                                // skip Ljava/lang/Object, because all class are the subtype of Object
-                                if (!calleeClassName.contains("Ljava/lang/Object")) {
-                                    subtypes.addAll(getSubtype(calleeClass, cha));
-                                }
-                                externalDirectInvokedClasses.addAll(subtypes.stream().
-                                        filter(subtype -> !internalClasses.contains(subtype)).
-                                        collect(Collectors.toList()));
-                            }
 
-                            doExtract(true, clazz, method, calleeClassName, calleeMethodName,
+                            doExtract(loggerScope, clazz, method, calleeClassName, calleeMethodName,
                                     instruction, ir, cha, cache, output);
                         }
                     }
@@ -190,79 +154,14 @@ public class GetLogger {
                     LOG.error("\tError while creating IR for method: " + method.getReference(), e);
                 }
             }
-
         }
 
-        // handle invoked external class
-        LOG.info("ImmediateExternal classes:  {}", externalDirectInvokedClasses.size());
-        Set<IClass> visitedClasses = new HashSet<>(internalClasses);
-        while(!externalDirectInvokedClasses.isEmpty()) {
-            IClass clazz = externalDirectInvokedClasses.iterator().next();
-            externalDirectInvokedClasses.remove(clazz);
-            visitedClasses.add(clazz);
-            if (filter(clazz)) {
-                LOG.debug("class {} has been filterd", clazz.toString());
-                continue;
-            }
-            LOG.info("class:\t" + clazz);
-            for(IMethod method: clazz.getDeclaredMethods()) {
-                // skip abstract method
-                if (method.isAbstract()) {
-                    continue;
-                }
-                // no need to handle (static) field initialization code,
-                // because all static initialization code are in <clinit> named method
-                LOG.debug("\tmethod:\t" + method);
-                try {
-                    IR ir = cache.getIR(method); // can be null
-                    SSAInstruction[] instructions = ir.getInstructions();
-                    for (int i = 0; i < instructions.length; i++) {
-                        SSAInstruction instruction = instructions[i];
-                        if (instruction instanceof SSAInvokeInstruction) {
-                            IMethod callee = cha.resolveMethod(((SSAInvokeInstruction) instruction).getDeclaredTarget()); // can be null
-                            if (callee == null) {
-                                if (LOG.isDebugEnabled()) {
-                                    IBytecodeMethod m = (IBytecodeMethod) ir.getMethod();
-                                    int bytecodeIndex = m.getBytecodeIndex(i);
-                                    int sourceLineNum = m.getLineNumber(bytecodeIndex);
-                                    LOG.debug("Cannot find the declared target of method in source line {}", sourceLineNum);
-                                }
-                                continue;
-                            }
-
-                            IClass calleeClass = callee.getDeclaringClass();
-                            String calleeClassName = calleeClass.getName().toString();
-                            String calleeMethodName = callee.getName().toString();
-                            // if not visited
-                            if (!visitedClasses.contains(calleeClass)) {
-                                Set<IClass> subtypes = new HashSet<>();
-                                subtypes.add(calleeClass);
-                                // find all subtype (subclass and implemented-class)
-                                if (!calleeClassName.contains("Ljava/lang/Object")) {
-                                    subtypes.addAll(getSubtype(calleeClass, cha));
-                                }
-                                externalDirectInvokedClasses.addAll(subtypes.stream().
-                                        filter(subtype -> !visitedClasses.contains(subtype)).
-                                        collect(Collectors.toList()));
-
-                                doExtract(false, clazz, method, calleeClassName, calleeMethodName,
-                                        instruction, ir, cha, cache, output);
-                            }
-                        }
-                    }
-                }catch (Throwable e){
-                    LOG.error("\tError while creating IR for method: " + method.getReference(), e);
-                }
-            }
-
-        }
     }
 
-    private static void doExtract(Boolean internal, IClass callerClass, IMethod callerMethod, String calleeClassName,
+    private static void doExtract(String scope, IClass callerClass, IMethod callerMethod, String calleeClassName,
                                   String calleeMethodName, SSAInstruction instruction, IR ir, ClassHierarchy cha,
                                   IAnalysisCacheView cache, File output) {
 
-        String scope = internal?"Internal":"External";
         String libraryName;
         // Check whether it is a method to get logger
         if (Constants.LoggerFunctions.containsKey(calleeClassName + "." + calleeMethodName)) {
@@ -313,12 +212,16 @@ public class GetLogger {
                     if ("getClass".equals(method.getName().toString())) {
                         // handle 1st and 3rd case
                         loggerName = ((SSAInvokeInstruction) defineInst).getDeclaredTarget().getDeclaringClass().toString();
+                        if ("<Application,Ljava/lang/Object>".equals(loggerName)) {
+                            // handle 3rd case, in this case, the logger class will be detected as java.lang.Object
+                            loggerName = callerClass.toString();
+                        }
                         naming = "naming by class literal";
                     } if ("getName".equals(method.getName().toString())) {
+                        // handle 2nd case
                         if (defineInst.getNumberOfUses() != 0) {
                             SSAInstruction preDefineInst = cache.getDefUse(ir).getDef(defineInst.getUse(0));
                             if (preDefineInst instanceof SSALoadMetadataInstruction) {
-                                // handle 2nd case
                                 loggerName = ((SSALoadMetadataInstruction) preDefineInst).getToken().toString();
                                 naming = "naming by class literal";
                             }
@@ -388,7 +291,7 @@ public class GetLogger {
                 "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
                 "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"jingwei3"};
+        projects = new String[]{"test"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
 //        String prefix = "/media/chenzhi/7ae9463a-2a19-4d89-8179-d160bcb4ce1b";
