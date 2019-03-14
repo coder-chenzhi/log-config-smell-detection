@@ -214,3 +214,13 @@
 {hive_root}/lib/log4j-slf4j-impl-2.10.0.jar External
 {hive_root}/lib/log4j-web-2.10.0.jar External
 {hadoop_root}/share/hadoop/tools/lib/hadoop-distcp-2.9.2.jar External
+{hadoop_root}/share/hadoop/hdfs/lib/jackson-core-2.7.8.jar External
+{hadoop_root}/share/hadoop/hdfs/lib/jackson-databind-2.7.8.jar External
+{hadoop_root}/share/hadoop/hdfs/lib/jackson-annotations-2.7.8.jar External
+{hadoop_root}/share/hadoop/mapreduce/lib/hadoop-annotations-2.9.2.jar External
+{hadoop_root}/share/hadoop/common/hadoop-common-2.9.2.jar External
+{hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-core-2.9.2.jar External
+{hadoop_root}/share/hadoop/hdfs/hadoop-hdfs-2.9.2.jar External
+{hadoop_root}/share/hadoop/yarn/test/hadoop-yarn-server-tests-2.9.2-tests.jar External
+{hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-jobclient-2.9.2.jar External
+{hadoop_root}/share/hadoop/mapreduce/hadoop-mapreduce-client-hs-2.9.2.jar External
