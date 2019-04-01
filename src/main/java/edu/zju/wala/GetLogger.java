@@ -291,7 +291,7 @@ public class GetLogger {
                 "Storm", "zookeeper", "auctionplatform", "buy2", "diamond", "fundplatform", "itemcenter", "jingwei3",
                 "notify", "tddl-server", "tlogserver", "tradeplatform"};
 
-        projects = new String[]{"test"};
+        projects = new String[]{"tlogserver"};
         String outputPath = "/home/chenzhi/IdeaProjects/logconfigsmelldetection/logs";
 
 //        String prefix = "/media/chenzhi/7ae9463a-2a19-4d89-8179-d160bcb4ce1b";

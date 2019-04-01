@@ -6,13 +6,12 @@
 .classpath
 .project
 *.iml
+*.log.bak
 
 # Compiled class file
 *.class
 
 
-# Log file
-*.log
 
 # BlueJ files
 *.ctxt
