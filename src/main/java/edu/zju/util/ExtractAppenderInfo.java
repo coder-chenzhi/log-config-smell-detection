@@ -125,7 +125,7 @@ public class ExtractAppenderInfo {
         }
     }
     public static void main(String[] args) {
-        String configPath = "F:\\Dropbox\\Research\\OwnWork\\Log\\Config\\data\\config\\Ali\\buy2_conf\\logback.xml";
-        extract(configPath, "xml","logback");
+        String configPath = "F:\\Dropbox\\Research\\OwnWork\\Log\\Config\\data\\config\\Ali\\fundplatform_conf\\fundplatform-log4j2.xml";
+        extract(configPath, "xml","log4j2");
     }
 }

@@ -89,6 +89,9 @@ public class ConfigUtil {
                         if (key.startsWith("log4j.logger.")) {
                             loggerMap.put(key.replace("log4j.logger.", ""), -1);
                         }
+                        if (key.startsWith("log4j.category.")) {
+                            loggerMap.put(key.replace("log4j.category.", ""), -1);
+                        }
                     }
                 } else {
                     // log4j2.properties
@@ -116,7 +119,8 @@ public class ConfigUtil {
                 "Ali\\fundplatform_conf\\fundplatform-log4j2.xml", "Ali\\buy2_conf\\logback-biz-logback.xml",
                 "Ali\\buy2_conf\\logback-domain-logback.xml", "Ali\\buy2_conf\\logback-forest-logback.xml",
                 "Ali\\buy2_conf\\logback-logback.xml", "Ali\\buy2_conf\\logback-misc-logback.xml",
-                "Ali\\buy2_conf\\logback-monitor-logback.xml", "Ali\\buy2_conf\\logback-structure-logback.xml"
+                "Ali\\buy2_conf\\logback-monitor-logback.xml", "Ali\\buy2_conf\\logback-structure-logback.xml",
+                "Ali\\tradeplatform3-logback.xml"
         };
 //        projects = new String[]{"OSS\\Activemq-log4j.properties"};
         for (String pro : projects) {

@@ -167,6 +167,7 @@ public class GetLogger {
         if (Constants.LoggerFunctions.containsKey(calleeClassName + "." + calleeMethodName)) {
             libraryName = Constants.LoggerFunctions.get(calleeClassName + "." + calleeMethodName);
         } else if ("getLog".equals(calleeMethodName) || "getLogger".equals(calleeMethodName)) {
+            //TODO Be careful, this operation is too aggressive
             // the name of the method indicate that this method is to get logger
             libraryName = "Unknown";
         } else {
